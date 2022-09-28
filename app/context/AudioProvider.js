@@ -253,13 +253,17 @@ export class AudioProvider extends PureComponent {
 
     //Eğer inter yoksa..
     //Direk cache'den all..
-    // if (this.state.noInternetConnection) {
-    //   console.log(
-    //     "-------------Songs Files: NO Connection Cache---------------------"
-    //   );
-    //   this.state.audioFiles = JSON.parse(await AsyncStorage.getItem("songs"));
-    //   return;
-    // }
+    if (this.state.noInternetConnection) {
+      console.log(
+        "-------------Songs Files: NO Connection Cache---------------------"
+      );
+
+      this.setState({
+        ...this.state,
+        audioFiles: JSON.parse(await AsyncStorage.getItem("songs")),
+      });
+      return;
+    }
 
     //Şarkıları da al.
     const songs = this.state.songs;
@@ -306,7 +310,9 @@ export class AudioProvider extends PureComponent {
     //console.log(this.state.audioFiles);
 
     //Listeyi Cache at.
-    await AsyncStorage.setItem("songs", JSON.stringify(filtered_song));
+    if (filtered_song.length != 0) {
+      await AsyncStorage.setItem("songs", JSON.stringify(filtered_song));
+    }
   };
 
   /**
@@ -337,33 +343,19 @@ export class AudioProvider extends PureComponent {
    * Internet yoksa, şarkı listesini Storage'tan al.
    * //Ve çalll
    */
-  ifThereIsNOOInternet = async (forSongs = false) => {
+  ifThereIsNOOInternet = async () => {
     NetInfo.fetch().then(async (connection) => {
       try {
         //Heger ki internet yoksammm
         if (!connection.isConnected) {
-          //TODO:START
-          //Listeyi güncelle
-
-          // this.state.audioFiles = JSON.parse(
-          //   await AsyncStorage.getItem("songs")
-          // );
-          if (
-            (await this.cacheControl(
-              "Last_Playlist_Update_Time",
-              config.TIME_OF_GETTING_SONGS_FROM_SERVER
-            )) === false
-          ) {
-            console.log(
-              "-------------INTERNET YOK : CACHETEN OKUYORUZZ-------------"
-            );
-            if (this.state.audioFiles.length === 0) {
-              const songs = JSON.parse(await AsyncStorage.getItem("songs"));
-              this.setState({ ...this.state, audioFiles: songs });
-              this.startToPlay();
-            }
-          }
-
+          console.log(
+            "-------------INTERNET YOK : CACHETEN OKUYORUZZ-------------"
+          );
+          const songs = JSON.parse(await AsyncStorage.getItem("songs"));
+          this.setState({ ...this.state, audioFiles: songs });
+          //await this.getAudioFiles();
+          this.startToPlay();
+          this.setState({ ...this.state, noInternetConnection: true });
           //  await this.getAnonsFiles();
         } else {
           this.setState({ ...this.state, noInternetConnection: false });
@@ -449,11 +441,10 @@ export class AudioProvider extends PureComponent {
     }
 
     //Web siteye login ol.
-    await this.getPlaylistFromServer().then(async () => {
-      //Çalmaya başlaaaa
-      await this.getAudioFiles();
-      this.startToPlay();
-    });
+    await this.getPlaylistFromServer();
+
+    await this.getAudioFiles();
+    this.startToPlay();
   };
 
   //Playlisti alır..
@@ -493,6 +484,9 @@ export class AudioProvider extends PureComponent {
           this.setState({ ...this.state, songs: playlist });
           AsyncStorage.setItem("Last_Playlist_Update_Time", getTheTime());
         }
+      })
+      .catch(async (e) => {
+        await this.ifThereIsNOOInternet();
       });
   };
 

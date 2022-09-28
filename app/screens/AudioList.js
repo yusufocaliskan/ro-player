@@ -179,6 +179,7 @@ export class AudioList extends Component {
   };
 
   render() {
+    console.log("--------------------: ", this.context.audioFiles);
     if (!this.context?.audioFiles?.length) {
       return <LoadingSimple />;
     }
