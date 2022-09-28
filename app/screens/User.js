@@ -9,6 +9,7 @@ import { stop } from "../misc/AudioController";
 import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
 import * as ScreenOrientation from "expo-screen-orientation";
+import configs from "../misc/config";
 
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
@@ -120,6 +121,9 @@ const User = () => {
             text={Lang?.LOGOUT}
             textStyle={styles.buttonTextStyle}
           />
+        </View>
+        <View>
+          <Text style={styles.Sehir}>{configs.VERSION}</Text>
         </View>
       </View>
     </Screen>

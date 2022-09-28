@@ -77,7 +77,11 @@ const AudioListItem = ({
                 ]}
               >
                 <Text style={styles.thumbnailText}>
-                  {activeListItem ? renderIcon(isPlaying) : keyy}
+                  {activeListItem
+                    ? renderIcon(isPlaying)
+                    : item.Artist == "Radiorder Anons Sistemi"
+                    ? "AN"
+                    : keyy}
                 </Text>
               </View>
             ) : null}
@@ -100,9 +104,15 @@ const AudioListItem = ({
               </View>
 
               <View style={styles.titleBottom}>
-                <Text style={styles.timeText}>
-                  {convertTime(item.duration)}
-                </Text>
+                {item.Artist == "Radiorder Anons Sistemi" ? (
+                  <Text style={[styles.timeText, { color: color.GREEN_LIGHT }]}>
+                    {item.Artist}
+                  </Text>
+                ) : (
+                  <Text style={styles.timeText}>
+                    {convertTime(item.duration)}
+                  </Text>
+                )}
                 {item.FileType == "anons" ? (
                   <View>
                     <View>

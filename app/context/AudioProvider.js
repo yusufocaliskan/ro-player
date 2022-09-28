@@ -348,17 +348,22 @@ export class AudioProvider extends PureComponent {
           // this.state.audioFiles = JSON.parse(
           //   await AsyncStorage.getItem("songs")
           // );
-          if (forSongs) {
-            this.setState({ ...this.state, noInternetConnection: true });
-            await this.getAudioFiles().then(() => {
+          if (
+            (await this.cacheControl(
+              "Last_Playlist_Update_Time",
+              config.TIME_OF_GETTING_SONGS_FROM_SERVER
+            )) === false
+          ) {
+            console.log(
+              "-------------INTERNET YOK : CACHETEN OKUYORUZZ-------------"
+            );
+            if (this.state.audioFiles.length === 0) {
+              const songs = JSON.parse(await AsyncStorage.getItem("songs"));
+              this.setState({ ...this.state, audioFiles: songs });
               this.startToPlay();
-            });
+            }
           }
 
-          //Anonslar
-          this.state.anonsFiles = JSON.parse(
-            await AsyncStorage.getItem("anons")
-          );
           //  await this.getAnonsFiles();
         } else {
           this.setState({ ...this.state, noInternetConnection: false });
@@ -476,6 +481,13 @@ export class AudioProvider extends PureComponent {
                 }
               }
             );
+
+            // if (playlist[i].artist == "Radiorder Anons Sistemi") {
+            //   this.setState({
+            //     ...this.state,
+            //     anons: [...this.state.anons, playlist[i]],
+            //   });
+            // }
           }
 
           this.setState({ ...this.state, songs: playlist });

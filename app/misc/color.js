@@ -13,6 +13,7 @@ export default {
   WHITE: "#fafafa",
   BLACK: "#111",
   GRAY: "#444444",
+  GREEN_LIGHT: "#7FB77E",
   GREEN: "#36AE7C",
   BLUE: "#187498",
   YELLOW: "#F9D923",

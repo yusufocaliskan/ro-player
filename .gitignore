@@ -1,4 +1,5 @@
 node_modules/
+.history
 .expo/
 dist/
 npm-debug.*
@@ -45,7 +46,6 @@ project.xcworkspace
 build/
 .idea
 .gradle
-local.properties
 *.iml
 *.hprof
 
