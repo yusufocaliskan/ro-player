@@ -1,0 +1,7 @@
+<resources>
+  <string name="app_name">ro-player</string>
+  <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
+  <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
+  
+  <string moduleConfig="true" name="CodePushDeploymentKey">8mrn_t3yBHaV5V9Q1T04m9yc-bcKVys6C4LjO</string>
+</resources>
