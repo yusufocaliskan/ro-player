@@ -3,8 +3,9 @@ import { Text, Modal, StyleSheet, View, Alert } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
-
+import Orientation from "react-native-orientation-locker";
 import { Audio } from "expo-av";
+import TrackPlayer, { RepeatMode } from "react-native-track-player";
 import {
   getCurrentDate,
   storeAudioForNextOpening,
@@ -122,6 +123,8 @@ export class AudioProvider extends PureComponent {
 
       //Updates
       noAnyNewUpdateInserver: false,
+
+      player: null,
 
       //Güncel tarih
       whatIsTheDate: `${getCurrentDate(
@@ -291,6 +294,7 @@ export class AudioProvider extends PureComponent {
         filename: storageFile?.filename,
         height: storageFile?.height,
         id: storageFile?.id,
+        url: storageFile?.uri,
         mediaType: storageFile?.mediaType,
         modificationTime: storageFile?.modificationTime,
         uri: storageFile?.uri,
@@ -396,10 +400,11 @@ export class AudioProvider extends PureComponent {
    */
   componentDidMount = () => {
     //this.keepWorkingInBackground();
-
+    Orientation.lockToLandscapeLeft();
     //DB Bağlantı, dosya izni ve verileri databaseden all.
     this.getUserInfo();
     this.dbConnection();
+    this.playerEventListener();
   };
 
   /**
@@ -432,11 +437,15 @@ export class AudioProvider extends PureComponent {
       )) === false
     ) {
       console.log("-------------CACHETEN OKUYORUZZ-------------");
-      if (this.state.audioFiles.length === 0) {
+      console.log(this.state.audioFiles.length);
+      if (this.state.audioFiles.length == 0) {
+        console.log("--------fdsfdsf-------");
         const songs = JSON.parse(await AsyncStorage.getItem("songs"));
         this.setState({ ...this.state, audioFiles: songs });
-        this.startToPlay();
+
+        await this.startToPlay();
       }
+
       return;
     }
 
@@ -444,7 +453,7 @@ export class AudioProvider extends PureComponent {
     await this.getPlaylistFromServer();
 
     await this.getAudioFiles();
-    this.startToPlay();
+    await this.startToPlay();
   };
 
   //Playlisti alır..
@@ -528,7 +537,6 @@ export class AudioProvider extends PureComponent {
             };
             try {
               const mp3_file = `https://radiorder.online/${sounds?.mp3}`;
-              console.log(mp3_file);
 
               await RNFetchBlob.config(options)
                 .fetch("GET", mp3_file)
@@ -563,86 +571,39 @@ export class AudioProvider extends PureComponent {
     };
   }
 
-  //Slider için positionı update et
-  onPlaybackStatusUpdate = async (playbackStatus) => {
-    let audio;
-    let status;
-    if (playbackStatus.isLoaded && playbackStatus.isPlaying) {
-      this.setState({
-        ...this.state,
-        playbackPosition: playbackStatus.positionMillis,
-        playbackDuration: playbackStatus.durationMillis,
-      });
-    }
-
-    //Şarkı bitti ise diğerine geç
-    if (playbackStatus.didJustFinish) {
+  //Playerdaki değişimleri dinler..
+  playerEventListener = () => {
+    //Şarkı değiştiğinde - Bittinğin de
+    TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
-      //await this.getSoundsAndAnonsFromServer();
 
       //Playlisti güncelle
       //Tabi eğer cache süresi dolmuş ise.
       await this.loginToServerAndPlay();
 
-      //Şuana kadar dinlenen şarkılar
-      //this.state.theSongListened.push(this.state.soundObj);
+      //Index'i belirle
+      const songIndex = await TrackPlayer.getCurrentTrack();
 
-      //Sonraki şarkının id'sini belirle
-      const nextAudioIndex = this.state.currentAudioIndex + 1;
-
-      //Scrollü kaydır..
+      //flatlist index
       this.setState({
         ...this.state,
-        flatListScrollIndex: this.state.currentAudioIndex,
+        flatListScrollIndex: songIndex,
+        currentAudioIndex: songIndex,
       });
 
-      // //Playlistin bittimiine 3 tane kala yeni download gelsinnnnn
-      // if (nextAudioIndex >= this.state.audioFiles.length - 3) {
-      //   this.LoadMoreSongs();
-      // }
+      const status = await TrackPlayer.getState();
+      const playbackObj = await TrackPlayer.getTrack(songIndex);
 
-      //Son şarkıyı bul
-      //Son şarkı ise,
-      console.log(nextAudioIndex);
-      console.log(this.state.audioFiles.length);
-      if (nextAudioIndex >= this.state.audioFiles.length) {
-        console.log("----LAST");
-        audio = this.state.audioFiles[0];
-        status = await playNext(this.state.playbackObj, audio?.uri);
-        this.setState({
-          ...this.state,
-          soundObj: status,
-          currentAudio: audio,
-          isPlaying: true,
-          currentAudioIndex: 0,
-        });
-
-        //Çalma sayını sıfırla gulüüüm :)
-        //Anonslar için onemmlliii
-        //Çalma sayısını sil, çünkü yeniden saymay başlayacağız.
-        //this.removeListenedSongCount();
-
-        //Çalınan şarkıları sıfırla
-        this.setState({ ...this.state.state, theSongListened: [] });
-        return await storeAudioForNextOpening(this.state.audioFiles[0], 0);
-      }
-
-      //Eğer yukarıdaki şart geçerli değil ise sonraki şarkıya geç...
-      //Ve Şarkıya geç ve çal, durumu güncelle
-      console.log(nextAudioIndex);
-      if (nextAudioIndex <= this.state.audioFiles.length) {
-        audio = this.state.audioFiles[nextAudioIndex];
-        status = await playNext(this.state.playbackObj, audio?.uri);
-        this.setState({
-          ...this.state,
-          soundObj: status,
-          currentAudio: audio,
-          isPlaying: true,
-          currentAudioIndex: nextAudioIndex,
-        });
-      }
-      //await storeAudioForNextOpening(audio, nextAudioIndex);
-    }
+      //Yeni durumu state ata ve ilerlememesi için return'le
+      this.setState({
+        ...this.state,
+        playbackObj: playbackObj,
+        soundObj: status,
+        currentAudioIndex: songIndex,
+        //Çalma-Durdurma iconları için
+        isPlaying: true,
+      });
+    });
   };
 
   /**
@@ -652,36 +613,37 @@ export class AudioProvider extends PureComponent {
     //Dosya boş ise
 
     setTimeout(async () => {
-      if (this.state.soundObj === null) {
-        console.log("----------------- START TO PLAY -----------------");
-        //Play#1: Şarkıyı çal. Daha önce hiç çalınmamış ise
-        const audio = this.state.audioFiles[0];
-        const playbackObj = new Audio.Sound();
+      console.log("----------------- START TO PLAY -----------------");
+      //Play#1: Şarkıyı çal. Daha önce hiç çalınmamış ise
 
-        //Controllerdan çağır.
-        //Şarkıyı yükle ve çal
-        const status = await play(playbackObj, audio?.uri);
-        const index = 0;
+      //Controllerdan çağır.
 
-        //Yeni durumu state ata ve ilerlememesi için return'le
-        this.setState({
-          ...this.state,
-          currentAudio: audio,
-          playbackObj: playbackObj,
-          soundObj: status,
-          currentAudioIndex: index,
-          // //Çalma-Durdurma iconları için
-          isPlaying: true,
-        });
+      //Şarkıyı yükle ve çal
+      //Playeri oluştur
 
-        //Slider bar için statuyü güncelle
-        playbackObj.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
+      this.state.player = await TrackPlayer.setupPlayer();
+      await TrackPlayer.reset();
+      //Playlisti yükle
+      await TrackPlayer.add([...this.state.audioFiles]);
 
-        //Application açıldığında
-        //son çalınna şarkıyı bulmak için kullanırı
-        //storeAudioForNextOpening(audio, index);
-      }
-    }, 2000);
+      //Playlisti tekrarla
+      await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+
+      await TrackPlayer.play();
+      const status = await TrackPlayer.getState();
+
+      const index = 0;
+      const playbackObj = await TrackPlayer.getTrack(index);
+      //Yeni durumu state ata ve ilerlememesi için return'le
+      this.setState({
+        ...this.state,
+        playbackObj: playbackObj,
+        soundObj: status,
+        currentAudioIndex: index,
+        //Çalma-Durdurma iconları için
+        isPlaying: true,
+      });
+    }, 1000);
   };
 
   //Tüm müzik dosyalarını Temile
@@ -848,7 +810,6 @@ export class AudioProvider extends PureComponent {
           <WebView
             //ref={(r) => (this.state.webView = r)}
             onNavigationStateChange={(e) => {
-              console.log(e);
               if (e.loading == false) {
                 // this.setState({ ...this.state, showLoginModal: false });
               }

@@ -1,12 +1,15 @@
 //Play#1
+import RNFetchBlob from "rn-fetch-blob";
 
 //Şarkıyı başlatmak için kullanılır
 export const play = async (playbackObj, uri) => {
   try {
     //İlk durur
     //stop(playbackObj);
+    const isExist = await RNFetchBlob.fs.exists(uri);
+    console.log("URI:", uri);
+    console.log("File Exists: ", isExist);
 
-    //Sonra çalll
     //if (playbackObj._loaded === true) return resume(playbackObj);
     return await playbackObj.loadAsync({ uri }, { shouldPlay: true });
   } catch (error) {

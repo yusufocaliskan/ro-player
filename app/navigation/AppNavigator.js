@@ -58,7 +58,7 @@ const AppNavigator = () => {
             );
           },
         }}
-      /> */}
+      /> 
       <Tab.Screen
         name={Lang?.ANONS || "Anons"}
         component={Anons}
@@ -71,6 +71,7 @@ const AppNavigator = () => {
           },
         }}
       />
+      */}
       <Tab.Screen
         name={loadingState.userData?.FSL?.Ismi.split(" ")[0]}
         component={User}

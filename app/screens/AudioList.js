@@ -9,6 +9,7 @@ import ListFooterComponent from "../components/ListFooterComponent";
 import { storeAudioForNextOpening } from "../misc/Helper";
 import AnonsModal from "../components/AnonsModal";
 import * as ScreenOrientation from "expo-screen-orientation";
+import TrackPlayer from "react-native-track-player";
 
 //Expo-av şarkıları çalar.
 import { Audio } from "expo-av";
@@ -42,109 +43,37 @@ export class AudioList extends Component {
    * @param {object} audio
    * @returns object
    */
-  handleAudioPress = async (audio) => {
+  handleAudioPress = async (audio, index) => {
     const { playbackObj, soundObj, currentAudio, updateState, audioFiles } =
       this.context;
+    const status = await TrackPlayer.getState();
+    const currentAudioIndex = await TrackPlayer.getCurrentTrack();
 
-    //Play#1: Şarkıyı çal. Daha önce hiç çalınmamış ise
-    if (soundObj === null) {
-      const playbackObj = new Audio.Sound();
-
-      //Controllerdan çağır.
-      const status = await play(playbackObj, audio.uri);
-      const index = audioFiles.indexOf(audio);
-
-      //Yeni durumu state ata ve ilerlememesi için return'le
+    if (currentAudioIndex == index && status == "playing") {
+      TrackPlayer.pause();
       updateState(this.context, {
-        currentAudio: audio,
-        playbackObj: playbackObj,
-        soundObj: status,
         currentAudioIndex: index,
-
-        //Çalma-Durdurma iconları için
-        isPlaying: true,
+        isPlaying: false,
       });
-
-      playbackObj.setOnPlaybackStatusUpdate(
-        this.context.onPlaybackStatusUpdate
-      );
-
-      //Application açıldığında
-      //son çalınna şarkıyı bulmak için kullanırı
-      storeAudioForNextOpening(audio, index);
-    }
-
-    //Pause#2: Şarkıyı durdur.
-    if (
-      soundObj != null &&
-      soundObj.isLoaded &&
-      soundObj.isPlaying &&
-      currentAudio.id === audio.id
-    ) {
-      //Controller
-      const status = await pause(playbackObj);
-
-      //Yeni durumu state ata ve ilerlememesi için return'le
-      return updateState(this.context, { soundObj: status, isPlaying: false });
-    }
-
-    //Resume#3 : Şarkı durdurulmuş ise yeniden çalıdrmaya devam ettir
-    if (
-      soundObj != null &&
-      soundObj.isLoaded &&
-      !soundObj.isPlaying &&
-      currentAudio.id === audio.id
-    ) {
-      //console.log(audio);
-      const status = await resume(playbackObj);
-
-      //Yeni durumu state ata ve ilerlememesi için return'le
-      return updateState(this.context, {
-        soundObj: status,
-        isPlaying: true,
-      });
-    }
-
-    //Next#4 : Başka bir şarlkıya geç
-    if (
-      soundObj != null &&
-      soundObj.isLoaded &&
-      soundObj.isPlaying &&
-      currentAudio.id !== audio.id
-    ) {
-      const index = audioFiles.indexOf(audio);
-      const status = await playNext(playbackObj, audio.uri);
-
-      //Yüklenmiş toplam şarkıdan bir 2eksi olunca yükle
-      if (index == this.context.audioFiles.length - 3) {
-        this.context.LoadMoreSongs();
-      }
-
+    } else if (currentAudioIndex == index && status == "paused") {
+      TrackPlayer.play();
       updateState(this.context, {
-        currentAudio: audio,
-        soundObj: status,
-        isPlaying: true,
         currentAudioIndex: index,
+        isPlaying: true,
       });
-      storeAudioForNextOpening(audio, index);
     }
 
-    if (
-      soundObj != null &&
-      soundObj.isLoaded &&
-      !soundObj.isPlaying &&
-      currentAudio.id !== audio.id
-    ) {
-      const index = audioFiles.indexOf(audio);
-      const status = await playNext(playbackObj, audio.uri);
+    //Şarkıya geç
+    else {
+      TrackPlayer.skip(index);
+      TrackPlayer.play();
       updateState(this.context, {
-        currentAudio: audio,
-        soundObj: status,
-        isPlaying: true,
         currentAudioIndex: index,
+        isPlaying: true,
       });
-      storeAudioForNextOpening(audio, index);
     }
+
+    return;
   };
 
   /**
@@ -159,17 +88,26 @@ export class AudioList extends Component {
 
   //FlatList Scrollünü şarkının bulunduğu konuma
   //scroll et
-  flatListScrollToIndex = () => {
+  flatListScrollToIndex = (index) => {
     //this.context?.flatListScrollIndex
     this.flatListRef?.scrollToIndex({
-      animated: false,
-      index: this.context?.flatListScrollIndex - 1,
+      animated: true,
+      index: index - 1,
     });
   };
 
   componentDidMount = () => {
     //this.props.navigation.setOptions({ orientation: "landscape" });
     //this.changeScreenOrientation();
+    this.eventListener();
+  };
+
+  eventListener = () => {
+    TrackPlayer.addEventListener("playback-track-changed", async () => {
+      const songIndex = await TrackPlayer.getCurrentTrack();
+
+      this.flatListScrollToIndex(songIndex);
+    });
   };
 
   componentDidUpdate = (nextProps, nextState) => {
@@ -179,7 +117,6 @@ export class AudioList extends Component {
   };
 
   render() {
-    console.log("--------------------: ", this.context.audioFiles);
     if (!this.context?.audioFiles?.length) {
       return <LoadingSimple />;
     }
@@ -193,9 +130,9 @@ export class AudioList extends Component {
             keyExtractor={(item, index) => String(index)}
             //initialNumToRender={2}
             //scrollEnabled={this.context.playListCrossChecking ? false : true}
-            // ref={(ref) => {
-            //   this.flatListRef = ref;
-            // }}
+            ref={(ref) => {
+              this.flatListRef = ref;
+            }}
             // onEndReached={() => {
             //   NetInfo.fetch().then(async (connection) => {
             //     if (connection.isConnected) {
@@ -229,7 +166,7 @@ export class AudioList extends Component {
                 item={item}
                 index={index}
                 keyy={index + 1}
-                onAudioPress={() => this.handleAudioPress(item)}
+                onAudioPress={() => this.handleAudioPress(item, index)}
               />
             )}
           />

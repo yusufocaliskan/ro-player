@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.yusufocaliskan.roplayer">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.yusufocaliskan.roplayer">
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -9,7 +11,10 @@
   <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION"/>
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+
+      tools:ignore="ScopedStorage" />
+
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -17,7 +22,8 @@
       <data android:scheme="https"/>
     </intent>
   </queries>
-  <application 
+  <application
+      android:requestLegacyExternalStorage="true"
   android:name=".MainApplication" 
   android:label="@string/app_name" 
   android:icon="@mipmap/radiorder_icon" 
@@ -31,14 +37,14 @@
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL" android:value="https://exp.host/@yusufocaliskan/ro-player"/>
     <activity 
-    android:name=".MainActivity" 
-    android:label="@string/app_name" 
-    android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode" 
+    android:name=".MainActivity"
+    android:label="@string/app_name"
+    android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
     android:launchMode="singleTask" 
     android:windowSoftInputMode="adjustResize" 
     android:theme="@style/Theme.App.SplashScreen" 
     android:exported="true" 
-    android:screenOrientation="portrait">
+    android:screenOrientation="landscape">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
@@ -49,7 +55,11 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="com.yusufocaliskan.roplayer"/>
       </intent-filter>
+
+      
     </activity>
     <activity android:name="com.facebook.react.devsupport.DevSettingsActivity" android:exported="false"/>
+
+    
   </application>
 </manifest>

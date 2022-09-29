@@ -128,7 +128,7 @@ const Login = () => {
   return (
     <View style={styles.container}>
       <Logo styles={styles.logo} />
-      <Text style={{ color: "white" }}>{Platform.isTV.toString()}</Text>
+      {/* <Text style={{ color: "white" }}>{Platform.isTV.toString()}</Text> */}
       <Input
         type="text"
         placeholder={Lang?.USER_NAME}

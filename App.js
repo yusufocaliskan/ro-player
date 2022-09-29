@@ -21,7 +21,7 @@ const codePushOptions = {
 };
 
 //Hataları kaldır.
-LogBox.ignoreAllLogs();
+//LogBox.ignoreAllLogs();
 
 const App = () => {
   //Application başlatılıdğında Bir update var mı yok mu diye bak.
