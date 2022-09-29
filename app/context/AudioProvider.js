@@ -331,16 +331,27 @@ export class AudioProvider extends PureComponent {
    * @param {integer} timeOut kaç saat?
    * @returns boolean
    */
-  cacheControl = async (lastCacheTime, timeOut) => {
-    const lastAnonsUpdateTime = await AsyncStorage.getItem(lastCacheTime);
+  cacheControl = async () => {
+    const lastAnonsUpdateTime = await AsyncStorage.getItem(
+      "Last_Playlist_Update_Time"
+    );
+    const timeOut = config.TIME_OF_GETTING_SONGS_FROM_SERVER;
 
     const diffTime = getDifferenceBetweenTwoHours(
       new Date(lastAnonsUpdateTime).getTime(),
-      new Date(getTheTime()).getTime()
+      new Date().getTime()
     );
-    // console.log("Anons Last", lastAnonsUpdateTime, "Anons Time:", getTheTime());
-    // console.log("Anons Time: ", new Date(this.state.whatIsTheDate).getTime());
-    // console.log("Anons TimeOut: ", timeOut);
+
+    // console.log(
+    //   "Anons Last",
+    //   new Date(lastAnonsUpdateTime),
+    //   "Anons Time:",
+    //   new Date()
+    // );
+    // console.log("Anons Time: ", new Date().getTime());
+    // console.log("Anons TimeOut: ", convertSecondToMillisecond(timeOut));
+    // console.log("diff ", diffTime);
+    // console.log("Cont", diffTime > convertSecondToMillisecond(timeOut));
 
     if (diffTime > convertSecondToMillisecond(timeOut)) {
       return true;
@@ -482,7 +493,11 @@ export class AudioProvider extends PureComponent {
           }
 
           this.setState({ ...this.state, songs: playlist });
-          AsyncStorage.setItem("Last_Playlist_Update_Time", getTheTime());
+          console.log("-------------IT IS FOR THE UPDATE TIME---------------");
+          AsyncStorage.setItem(
+            "Last_Playlist_Update_Time",
+            new Date().toISOString()
+          );
         }
       })
       .catch(async (e) => {
