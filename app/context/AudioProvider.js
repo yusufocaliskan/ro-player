@@ -5,7 +5,7 @@ import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
 import Orientation from "react-native-orientation-locker";
 import { Audio } from "expo-av";
-import TrackPlayer, { RepeatMode } from "react-native-track-player";
+import TrackPlayer, { RepeatMode, Event } from "react-native-track-player";
 import {
   getCurrentDate,
   storeAudioForNextOpening,
@@ -278,6 +278,12 @@ export class AudioProvider extends PureComponent {
       const mp3_file = songs[d].mp3.split("/").pop();
       const dosya_name = `sound_${clearFileName(mp3_file)}`;
 
+      const { DownloadDir } = RNFetchBlob.fs.dirs;
+      //İsmi temizle ve yeniden oşlutiur
+      let file = `${DownloadDir}/${dosya_name}`;
+      const isExist = await RNFetchBlob.fs.exists(file);
+      if (isExist == false) continue;
+
       //Dosya eşini bul.
       let storageFile;
       media.assets.map((item) => {
@@ -371,22 +377,6 @@ export class AudioProvider extends PureComponent {
   };
 
   /**
-   * Arkada planda çalmaya devam etmek için
-   */
-  keepWorkingInBackground = () => {
-    //DAha önce çalan bir şarkı yoksa broo...
-    Audio.setAudioModeAsync({
-      // allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      //interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DUCK_OTHERS,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      //interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS,
-      playThroughEarpieceAndroid: false,
-    });
-  };
-
-  /**
    * Kullanıcı bilgiler.
    */
   getUserInfo = async () => {
@@ -400,11 +390,10 @@ export class AudioProvider extends PureComponent {
    */
   componentDidMount = () => {
     //this.keepWorkingInBackground();
-    Orientation.lockToLandscapeLeft();
+
     //DB Bağlantı, dosya izni ve verileri databaseden all.
     this.getUserInfo();
     this.dbConnection();
-    this.playerEventListener();
   };
 
   /**
@@ -420,6 +409,8 @@ export class AudioProvider extends PureComponent {
         //Serverdan Şarkı listesini al
         //await this.getSoundsAndAnonsFromServer();
         await this.loginToServerAndPlay();
+
+        await this.playerEventListener();
       });
 
       //Serverdan şarkı ve anonsları al
@@ -437,7 +428,7 @@ export class AudioProvider extends PureComponent {
       )) === false
     ) {
       console.log("-------------CACHETEN OKUYORUZZ-------------");
-      console.log(this.state.audioFiles.length);
+
       if (this.state.audioFiles.length == 0) {
         console.log("--------fdsfdsf-------");
         const songs = JSON.parse(await AsyncStorage.getItem("songs"));
@@ -572,7 +563,11 @@ export class AudioProvider extends PureComponent {
   }
 
   //Playerdaki değişimleri dinler..
-  playerEventListener = () => {
+  playerEventListener = async () => {
+    TrackPlayer.addEventListener("playback-state", async (e) => {
+      console.log("--------------------EVENT--------------");
+      console.log(e);
+    });
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
@@ -591,15 +586,15 @@ export class AudioProvider extends PureComponent {
         currentAudioIndex: songIndex,
       });
 
-      const status = await TrackPlayer.getState();
-      const playbackObj = await TrackPlayer.getTrack(songIndex);
+      // const status = await TrackPlayer.getState();
+      // const playbackObj = await TrackPlayer.getTrack(songIndex);
 
       //Yeni durumu state ata ve ilerlememesi için return'le
       this.setState({
         ...this.state,
-        playbackObj: playbackObj,
-        soundObj: status,
-        currentAudioIndex: songIndex,
+        // playbackObj: playbackObj,
+        // soundObj: status,
+        // currentAudioIndex: songIndex,
         //Çalma-Durdurma iconları için
         isPlaying: true,
       });
@@ -614,35 +609,37 @@ export class AudioProvider extends PureComponent {
 
     setTimeout(async () => {
       console.log("----------------- START TO PLAY -----------------");
-      //Play#1: Şarkıyı çal. Daha önce hiç çalınmamış ise
-
-      //Controllerdan çağır.
 
       //Şarkıyı yükle ve çal
       //Playeri oluştur
+      try {
+        await TrackPlayer.setupPlayer();
 
-      this.state.player = await TrackPlayer.setupPlayer();
-      await TrackPlayer.reset();
-      //Playlisti yükle
-      await TrackPlayer.add([...this.state.audioFiles]);
+        // await TrackPlayer.reset();
+        //Playlisti yükle
+        await TrackPlayer.add([...this.state.audioFiles]);
 
-      //Playlisti tekrarla
-      await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+        console.log(await TrackPlayer.getQueue());
+        //Playlisti tekrarla
+        await TrackPlayer.setRepeatMode(RepeatMode.Queue);
 
-      await TrackPlayer.play();
-      const status = await TrackPlayer.getState();
+        await TrackPlayer.play();
+        const status = await TrackPlayer.getState();
 
-      const index = 0;
-      const playbackObj = await TrackPlayer.getTrack(index);
-      //Yeni durumu state ata ve ilerlememesi için return'le
-      this.setState({
-        ...this.state,
-        playbackObj: playbackObj,
-        soundObj: status,
-        currentAudioIndex: index,
-        //Çalma-Durdurma iconları için
-        isPlaying: true,
-      });
+        const index = 0;
+        const playbackObj = await TrackPlayer.getTrack(index);
+        //Yeni durumu state ata ve ilerlememesi için return'le
+        this.setState({
+          ...this.state,
+          playbackObj: playbackObj,
+          soundObj: status,
+          currentAudioIndex: index,
+          //Çalma-Durdurma iconları için
+          isPlaying: true,
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }, 1000);
   };
 

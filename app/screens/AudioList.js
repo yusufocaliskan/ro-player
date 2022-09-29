@@ -99,7 +99,7 @@ export class AudioList extends Component {
   componentDidMount = () => {
     //this.props.navigation.setOptions({ orientation: "landscape" });
     //this.changeScreenOrientation();
-    this.eventListener();
+    //this.eventListener();
   };
 
   eventListener = () => {

@@ -30,7 +30,7 @@ const configs = {
 
   //Servera gitme saati
   //saniye cinsinden
-  TIME_OF_GETTING_SONGS_FROM_SERVER: 60 * 60, //1 saat
+  TIME_OF_GETTING_SONGS_FROM_SERVER: 4, //1 saat
 
   //Servera indirilmiş olan şarkıların yeniden
   ANONS_FILTERING_CACHE_TIME: 1, //
