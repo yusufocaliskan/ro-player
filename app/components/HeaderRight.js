@@ -33,9 +33,7 @@ const HeaderRight = ({ lastPlaylistUpdateTime }) => {
           <View style={styles.updateView}>
             <MaterialIcons name="update" size={18} color={color.BLACK} />
 
-            <Text style={styles.updateText}>
-              {lastPlaylistUpdateTime.split("T")[1]}
-            </Text>
+            <Text style={styles.updateText}>{lastPlaylistUpdateTime}</Text>
           </View>
           <NoInternetConnection text={Lang?.NO_INTERNET} />
         </View>

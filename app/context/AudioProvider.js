@@ -274,15 +274,16 @@ export class AudioProvider extends PureComponent {
 
     //Ses
     let d = 0;
+    //for (; d < 5; d++) {
     for (; d < songs?.length; d++) {
       const mp3_file = songs[d].mp3.split("/").pop();
       const dosya_name = `sound_${clearFileName(mp3_file)}`;
 
-      const { DownloadDir } = RNFetchBlob.fs.dirs;
-      //İsmi temizle ve yeniden oşlutiur
-      let file = `${DownloadDir}/${dosya_name}`;
-      const isExist = await RNFetchBlob.fs.exists(file);
-      if (isExist == false) continue;
+      // const { DownloadDir } = RNFetchBlob.fs.dirs;
+      // //İsmi temizle ve yeniden oşlutiur
+      // let file = `${DownloadDir}/${dosya_name}`;
+      // const isExist = await RNFetchBlob.fs.exists(file);
+      // if (isExist === false) continue;
 
       //Dosya eşini bul.
       let storageFile;
@@ -291,25 +292,28 @@ export class AudioProvider extends PureComponent {
           storageFile = item;
         }
       });
-
       //Push etmeden önce kontrol et push edeceğimiz ses var mı?
-      filtered_song.push({
-        albumId: storageFile?.albumId,
-        creationTime: storageFile?.creationTime,
-        duration: storageFile?.duration,
-        filename: storageFile?.filename,
-        height: storageFile?.height,
-        id: storageFile?.id,
-        url: storageFile?.uri,
-        mediaType: storageFile?.mediaType,
-        modificationTime: storageFile?.modificationTime,
-        uri: storageFile?.uri,
-        width: storageFile?.width,
-        DosyaIsmi: songs[d].title,
-        Artist: songs[d].artist,
-        mp3: songs[d].mp3,
-        Ismi: songs[d].title,
-      });
+      if (!storageFile) {
+        continue;
+      } else {
+        filtered_song.push({
+          albumId: storageFile?.albumId,
+          creationTime: storageFile?.creationTime,
+          duration: storageFile?.duration,
+          filename: storageFile?.filename,
+          height: storageFile?.height,
+          id: storageFile?.id,
+          url: storageFile?.uri,
+          mediaType: storageFile?.mediaType,
+          modificationTime: storageFile?.modificationTime,
+          uri: storageFile?.uri,
+          width: storageFile?.width,
+          DosyaIsmi: songs[d].title,
+          Artist: songs[d].artist,
+          mp3: songs[d].mp3,
+          Ismi: songs[d].title,
+        });
+      }
     }
 
     //push it into the state
@@ -322,6 +326,7 @@ export class AudioProvider extends PureComponent {
     //Listeyi Cache at.
     if (filtered_song.length != 0) {
       await AsyncStorage.setItem("songs", JSON.stringify(filtered_song));
+      await AsyncStorage.setItem("mediaFiles", JSON.stringify(media.assets));
     }
   };
 
@@ -432,12 +437,7 @@ export class AudioProvider extends PureComponent {
 
   loginToServerAndPlay = async () => {
     //Cache kontrolü yap.
-    if (
-      (await this.cacheControl(
-        "Last_Playlist_Update_Time",
-        config.TIME_OF_GETTING_SONGS_FROM_SERVER
-      )) === false
-    ) {
+    if ((await this.cacheControl()) === false) {
       console.log("-------------CACHETEN OKUYORUZZ-------------");
 
       if (this.state.audioFiles.length == 0) {
@@ -493,7 +493,7 @@ export class AudioProvider extends PureComponent {
           }
 
           this.setState({ ...this.state, songs: playlist });
-          console.log("-------------IT IS FOR THE UPDATE TIME---------------");
+          console.log("-------------IT IS the Time to UPDATE ---------------");
           AsyncStorage.setItem(
             "Last_Playlist_Update_Time",
             new Date().toISOString()
@@ -583,6 +583,12 @@ export class AudioProvider extends PureComponent {
       console.log("--------------------EVENT--------------");
       console.log(e);
     });
+
+    TrackPlayer.addEventListener("playback-queue-ended", async (e) => {
+      console.log("--------------------QUEUE ENDEDDDD. --------------");
+      // this.theSongCleaner();
+    });
+
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
@@ -600,6 +606,12 @@ export class AudioProvider extends PureComponent {
         flatListScrollIndex: songIndex,
         currentAudioIndex: songIndex,
       });
+
+      //Temizlik yap.
+      if (songIndex == this.state.audioFiles.length - 2) {
+        console.log("-------------TIME TO CLEANING-----");
+        this.theSongCleaner();
+      }
 
       // const status = await TrackPlayer.getState();
       // const playbackObj = await TrackPlayer.getTrack(songIndex);
@@ -668,7 +680,7 @@ export class AudioProvider extends PureComponent {
     for (let i = 0; mediaFiles.length; i++) {
       const results = await RNFetchBlob.fs
         .unlink(`${DownloadDir}/${mediaFiles[i].filename}`)
-        .then(() => {
+        .then(async () => {
           //Cacheleri temizle
           this.state.songs = [];
           this.state.anons = [];
@@ -677,9 +689,7 @@ export class AudioProvider extends PureComponent {
           AsyncStorage.removeItem("anons");
           AsyncStorage.removeItem("songs");
 
-          stop(this.state.playbackObj);
-          this.state.playbackObj = [];
-
+          await TrackPlayer.stop();
           return {
             message: "Dosyalar silindi.. ",
             deleted: true,
@@ -703,37 +713,32 @@ export class AudioProvider extends PureComponent {
   //Eşleşmeyeni siler
   theSongCleaner = async () => {
     const { DownloadDir } = RNFetchBlob.fs.dirs;
+    console.log("------------------FILE DELETING--------------");
+    //Silecnecek dosyaları bul be abi
+    let media = await this.getMediaFiles();
+    media = media.assets;
+    let audioFiles = this.state.audioFiles;
 
-    setTimeout(async () => {
-      // await this.getAudioFiles();
-      // await this.getAnonsFiles();
+    let fileWillDeleted = [];
+    for (let i = 0; i < audioFiles.length; i++) {
+      media = media.filter((item) => {
+        return item?.filename != audioFiles[i]?.filename;
+      });
+    }
 
-      let combinedList = [...this.state.audioFiles, ...this.state.anonsFiles];
+    for (let d = 0; d < media.length; d++) {
+      //TEmizle
+      const file = `${DownloadDir}/${media[d].filename}`;
 
-      //Silecnecek dosyaları bul be abi
-      let media = this.state.mediaFiles;
-      for (let i = 0; i <= media.length; i++) {
-        let fileWillDeleted;
-        combinedList.map((item) => {
-          if (item?.filename != media[i]?.filename) {
-            fileWillDeleted = item.filename;
-          }
+      const results = await RNFetchBlob.fs
+        .unlink(file)
+        .then(() => {
+          return { deleted: true };
+        })
+        .catch((err) => {
+          return { deleted: false };
         });
-
-        //TEmizle
-        fileWillDeleted = `${DownloadDir}/${fileWillDeleted}`;
-        const results = await RNFetchBlob.fs
-          .unlink(fileWillDeleted)
-          .then(() => {
-            return { deleted: true };
-          })
-          .catch((err) => {
-            return { deleted: false };
-          });
-      }
-
-      console.log("------------CLEANING TIMEEEE---------");
-    }, 2000);
+    }
   };
 
   /**Kontrollerdan */

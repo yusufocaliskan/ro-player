@@ -13,7 +13,13 @@ const Screen = ({ children }) => {
     );
     navigation?.setOptions({
       headerRight: () => {
-        return <HeaderRight lastPlaylistUpdateTime={lastPlaylistUpdateTime} />;
+        return (
+          <HeaderRight
+            lastPlaylistUpdateTime={new Date(
+              lastPlaylistUpdateTime
+            ).toLocaleTimeString()}
+          />
+        );
       },
     });
   };
