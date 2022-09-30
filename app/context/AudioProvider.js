@@ -296,7 +296,7 @@ export class AudioProvider extends PureComponent {
       if (!storageFile) {
         continue;
       } else {
-        filtered_song.push({
+        const the_song = {
           albumId: storageFile?.albumId,
           creationTime: storageFile?.creationTime,
           duration: storageFile?.duration,
@@ -312,7 +312,14 @@ export class AudioProvider extends PureComponent {
           Artist: songs[d].artist,
           mp3: songs[d].mp3,
           Ismi: songs[d].title,
-        });
+        };
+        if (the_song.url == "") {
+          the_song.url = `file:///storage/emulated/0/Download/${the_song.mp3
+            .split("/")
+            .pop()}`;
+        }
+
+        filtered_song.push(the_song);
       }
     }
 
@@ -600,6 +607,7 @@ export class AudioProvider extends PureComponent {
       //Index'i belirle
       const songIndex = await TrackPlayer.getCurrentTrack();
 
+      console.log(await TrackPlayer.getQueue());
       //flatlist index
       this.setState({
         ...this.state,

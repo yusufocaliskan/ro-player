@@ -100,7 +100,6 @@ const AudioListItem = ({
                       ? item.Ismi.split("/").pop()
                       : item.Ismi.split("/").pop()}
                   </Text>
-                  <Text style={styles.title}>{item.filename}</Text>
                 </View>
               </View>
 
