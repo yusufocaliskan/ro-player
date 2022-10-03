@@ -79,15 +79,15 @@ const User = () => {
     ]);
   };
 
-  const changeScreenOrientation = async () => {
-    await ScreenOrientation.lockAsync(
-      ScreenOrientation.OrientationLock.PORTRAIT_UP
-    );
-  };
+  // const changeScreenOrientation = async () => {
+  //   await ScreenOrientation.lockAsync(
+  //     ScreenOrientation.OrientationLock.PORTRAIT_UP
+  //   );
+  // };
 
   useEffect(() => {
     //this.props.navigation.setOptions({ orientation: "landscape" });
-    changeScreenOrientation();
+    //changeScreenOrientation();
   }, []);
 
   return (

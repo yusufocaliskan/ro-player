@@ -314,6 +314,7 @@ export class AudioProvider extends PureComponent {
           Ismi: songs[d].title,
         };
         if (the_song.url == "") {
+          console.log("URL CREATED : ", songs[d].title);
           the_song.url = `file:///storage/emulated/0/Download/${the_song.mp3
             .split("/")
             .pop()}`;
@@ -593,46 +594,37 @@ export class AudioProvider extends PureComponent {
 
     TrackPlayer.addEventListener("playback-queue-ended", async (e) => {
       console.log("--------------------QUEUE ENDEDDDD. --------------");
-      // this.theSongCleaner();
+      //this.theSongCleaner();
     });
 
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
 
-      //Playlisti güncelle
-      //Tabi eğer cache süresi dolmuş ise.
-      await this.loginToServerAndPlay();
-
       //Index'i belirle
       const songIndex = await TrackPlayer.getCurrentTrack();
 
       console.log(await TrackPlayer.getQueue());
+      //Playlisti güncelle
+      //Tabi eğer cache süresi dolmuş ise.
+      await this.loginToServerAndPlay().then(() => {
+        //Temizlik yap.
+        if (songIndex == this.state.audioFiles.length - 1) {
+          console.log("-------------TIME TO CLEANING-----");
+          this.theSongCleaner();
+        }
+      });
+
       //flatlist index
       this.setState({
         ...this.state,
         flatListScrollIndex: songIndex,
         currentAudioIndex: songIndex,
+        isPlaying: true,
       });
-
-      //Temizlik yap.
-      if (songIndex == this.state.audioFiles.length - 2) {
-        console.log("-------------TIME TO CLEANING-----");
-        this.theSongCleaner();
-      }
 
       // const status = await TrackPlayer.getState();
       // const playbackObj = await TrackPlayer.getTrack(songIndex);
-
-      //Yeni durumu state ata ve ilerlememesi için return'le
-      this.setState({
-        ...this.state,
-        // playbackObj: playbackObj,
-        // soundObj: status,
-        // currentAudioIndex: songIndex,
-        //Çalma-Durdurma iconları için
-        isPlaying: true,
-      });
     });
   };
 
@@ -734,9 +726,10 @@ export class AudioProvider extends PureComponent {
       });
     }
 
-    for (let d = 0; d < media.length; d++) {
+    for (let d = 0; d < media?.length; d++) {
       //TEmizle
       const file = `${DownloadDir}/${media[d].filename}`;
+      console.log("DELETED FILE: ", file);
 
       const results = await RNFetchBlob.fs
         .unlink(file)
@@ -852,9 +845,8 @@ export class AudioProvider extends PureComponent {
             thirdPartyCookiesEnabled={true}
             domStorageEnabled={true}
             bounces={true}
-            scrollEnabled={true}
+            //injectedJavaScript={jsCode}
             geolocationEnabled={true}
-            allowUniversalAccessFromFileURLs={true}
             useWebKit={true}
           />
         </Modal>

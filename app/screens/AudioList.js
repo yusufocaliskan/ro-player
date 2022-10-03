@@ -92,14 +92,14 @@ export class AudioList extends Component {
     //this.context?.flatListScrollIndex
     this.flatListRef?.scrollToIndex({
       animated: true,
-      index: index - 1,
+      index: index,
     });
   };
 
   componentDidMount = () => {
     //this.props.navigation.setOptions({ orientation: "landscape" });
     //this.changeScreenOrientation();
-    //this.eventListener();
+    this.eventListener();
   };
 
   eventListener = () => {
