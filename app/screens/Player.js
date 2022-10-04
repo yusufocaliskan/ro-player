@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-
+import TrackPlayer, { RepeatMode, Event } from "react-native-track-player";
 import { View, StyleSheet, Text, Dimensions } from "react-native";
 import Screen from "../components/Screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,10 +22,13 @@ const Player = () => {
   const [isPlayListLoading, setIsPlayListLoading] = useState(false);
   //const [userData, setUserData] = useState(loadingState?.userData?.FSL);
   const context = useContext(AudioContext);
-  const { playbackPosition, playbackDuration } = context;
+  //const { playbackPosition, playbackDuration } = context;
 
   //Slider position'ın hesapla
-  const calculateSeebBar = () => {
+  const calculateSeebBar = async () => {
+    const playbackPosition = await TrackPlayer.getPosition();
+    const playbackDuration = await TrackPlayer.getDuration();
+
     if (playbackPosition !== null && playbackDuration !== null) {
       return playbackPosition / playbackDuration;
     }
@@ -34,149 +37,37 @@ const Player = () => {
 
   //PLAY & PAUSE & RESUME
   const handlePlayPause = async () => {
-    //the App runing for the first time.
-    //Play#1 : İlk çalıyor.
-    if (context?.soundObj === null) {
-      const audio = context?.currentAudio;
-      const status = await play(context?.playbackObj, audio?.uri);
+    const playerState = await TrackPlayer.getState();
 
-      context?.playbackObj.setOnPlaybackStatusUpdate(
-        context?.setPlaybackStatusUpdate
-      );
-      return context?.updateState(context, {
-        soundObj: status,
-        shouldPlay: true,
-        currentAudio: audio,
-        isPlaying: true,
-        currentAudioIndex: 1,
-      });
-    }
-
-    //Resume#2
-
-    if (context?.soundObj && context?.soundObj.isPlaying) {
-      const status = await pause(context?.playbackObj);
-      return context?.updateState(context, {
-        soundObj: status,
+    //Çalıyor mu?
+    if (playerState == "playing") {
+      await TrackPlayer.pause();
+      context?.updateState(context, {
         isPlaying: false,
       });
+
+      return;
     }
 
-    //Pause#3
-    if (context?.soundObj && !context?.soundObj.isPlaying) {
-      const status = await resume(context?.playbackObj);
-      return context?.updateState(context, {
-        soundObj: status,
-        isPlaying: true,
-      });
-    }
+    //Oynat
+    await TrackPlayer.play();
+    context?.updateState(context, {
+      isPlaying: true,
+    });
   };
 
   /**
    * İleri git
    */
   const handleNext = async () => {
-    const { isLoaded } = await context?.playbackObj.getStatusAsync();
-
-    const isLastAudio =
-      context?.currentAudioIndex + 1 === context?.audioFiles.length;
-    let audio = context?.audioFiles[context?.currentAudioIndex + 1];
-    let index;
-    let status;
-    context.updateState(context, {
-      flatListScrollIndex: context.currentAudioIndex,
-    });
-
-    // //Yeni şarkıları yüklle..
-    if (context?.currentAudioIndex == context.audioFiles.length - 3) {
-      setIsPlayListLoading(true);
-
-      const load = await context.LoadMoreSongs();
-
-      //biraz bekle... Sonra butonu aktif et
-      setTimeout(() => {
-        setIsPlayListLoading(false);
-      }, 5000);
-    }
-
-    if (!isLoaded && !isLastAudio) {
-      index = context?.currentAudioIndex + 1;
-      status = await play(context?.playbackObj, audio?.uri);
-    }
-
-    if (isLoaded && !isLastAudio) {
-      index = context?.currentAudioIndex + 1;
-      status = await playNext(context?.playbackObj, audio?.uri);
-    }
-
-    if (isLastAudio) {
-      index = 0;
-      audio = context?.audioFiles[index];
-
-      if (isLoaded) {
-        status = await playNext(context?.playbackObj, audio?.uri);
-      } else {
-        status = await play(context?.playbackObj, audio?.uri);
-      }
-    }
-    console.log(audio);
-
-    context?.updateState(context, {
-      currentAudio: audio,
-      playbackObj: context?.playbackObj,
-      soundObj: status,
-      isPlaying: true,
-      currentAudioIndex: index,
-      playbackPosition: null,
-      playbackDuration: null,
-    });
-
-    storeAudioForNextOpening(audio, index);
+    await TrackPlayer.skipToNext();
   };
 
   /**
    * Geri git
    */
   const handlePrevious = async () => {
-    const { isLoaded } = await context?.playbackObj.getStatusAsync();
-
-    const isFirstAudio = context?.currentAudioIndex <= 0;
-    let audio = context?.audioFiles[context?.currentAudioIndex - 1];
-    let index;
-    let status;
-
-    if (!isLoaded && !isFirstAudio) {
-      index = context?.currentAudioIndex - 1;
-      status = await play(context?.playbackObj, audio?.uri);
-    }
-
-    if (isLoaded && !isFirstAudio) {
-      index = context?.currentAudioIndex - 1;
-      status = await playNext(context?.playbackObj, audio?.uri);
-    }
-
-    if (isFirstAudio) {
-      index = context?.totalAudioCount - 1;
-
-      audio = context?.audioFiles[index];
-      if (isLoaded) {
-        status = await playNext(context?.playbackObj, audio?.uri);
-      } else {
-        status = await play(context?.playbackObj, audio?.uri);
-      }
-    }
-
-    context?.updateState(context, {
-      currentAudio: audio,
-      playbackObj: context?.playbackObj,
-      soundObj: status,
-      isPlaying: true,
-      currentAudioIndex: index,
-      playbackPosition: null,
-      playbackDuration: null,
-    });
-
-    storeAudioForNextOpening(audio, index);
+    await TrackPlayer.skipToPrevious();
   };
 
   //Eğer gerçerli olan bir şarkı yoksa..
@@ -199,15 +90,15 @@ const Player = () => {
           <Text numberOfLines={1} style={styles.audioName}>
             {context?.currentAudio?.Ismi?.split("_")[1]}
           </Text>
-          <Slider
+          {/* <Slider
             style={{ width: width, height: 20, padding: 20 }}
             minimumValue={0}
             maximumValue={1}
-            value={calculateSeebBar()}
+            value={ () => await calculateSeebBar()}
             minimumTrackTintColor={color.DARK_RED}
             maximumTrackTintColor={color.FONT_MEDIUM}
             thumbTintColor={context?.isPlaying ? color.RED : color.GRAY}
-          />
+          /> */}
           <View style={styles.audioControllers}>
             <PlayerButton
               iconType="PREV"

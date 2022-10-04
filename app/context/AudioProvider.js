@@ -446,15 +446,15 @@ export class AudioProvider extends PureComponent {
   loginToServerAndPlay = async () => {
     //Cache kontrolü yap.
     if ((await this.cacheControl()) === false) {
-      console.log("-------------CACHETEN OKUYORUZZ-------------");
+      console.log("-------------Reading : CACHETEN-------------");
 
-      if (this.state.audioFiles.length == 0) {
-        console.log("--------fdsfdsf-------");
-        const songs = JSON.parse(await AsyncStorage.getItem("songs"));
-        this.setState({ ...this.state, audioFiles: songs });
+      //if (this.state.audioFiles.length == 0) {
+      console.log("--------Needed: Cacheee-------");
+      const songs = JSON.parse(await AsyncStorage.getItem("songs"));
+      this.setState({ ...this.state, audioFiles: songs });
 
-        await this.startToPlay();
-      }
+      await this.startToPlay();
+      //}
 
       return;
     }
@@ -642,11 +642,12 @@ export class AudioProvider extends PureComponent {
       try {
         await TrackPlayer.setupPlayer();
 
-        // await TrackPlayer.reset();
+        await TrackPlayer.reset();
+
         //Playlisti yükle
         await TrackPlayer.add([...this.state.audioFiles]);
 
-        console.log(await TrackPlayer.getQueue());
+        //console.log(await TrackPlayer.getQueue());
         //Playlisti tekrarla
         await TrackPlayer.setRepeatMode(RepeatMode.Queue);
 
@@ -659,6 +660,7 @@ export class AudioProvider extends PureComponent {
         this.setState({
           ...this.state,
           playbackObj: playbackObj,
+
           soundObj: status,
           currentAudioIndex: index,
           //Çalma-Durdurma iconları için
