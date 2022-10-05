@@ -47,7 +47,8 @@ export class AudioList extends Component {
     const { playbackObj, soundObj, currentAudio, updateState, audioFiles } =
       this.context;
     const status = await TrackPlayer.getState();
-    const currentAudioIndex = await TrackPlayer.getCurrentTrack();
+    const currentAudioIndex = this.context.currentAudioIndex;
+    //const currentAudioIndex = await TrackPlayer.getCurrentTrack();
 
     if (currentAudioIndex == index && status == "playing") {
       TrackPlayer.pause();
@@ -120,7 +121,6 @@ export class AudioList extends Component {
     if (!this.context?.audioFiles?.length) {
       return <LoadingSimple />;
     }
-
     return (
       <>
         <Screen>

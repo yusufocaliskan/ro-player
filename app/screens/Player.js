@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import TrackPlayer, { RepeatMode, Event } from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 import { View, StyleSheet, Text, Dimensions } from "react-native";
 import Screen from "../components/Screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -82,13 +82,17 @@ const Player = () => {
         <View style={styles.midBannerContainer}>
           <MaterialCommunityIcons
             name="music-circle"
-            size={300}
+            size={100}
             color={context?.isPlaying ? color.RED : color.GRAY}
           />
         </View>
         <View style={styles.audioPlayerContainer}>
           <Text numberOfLines={1} style={styles.audioName}>
-            {context?.currentAudio?.Ismi?.split("_")[1]}
+            {
+              context?.audioFiles[context?.currentAudioIndex]?.title?.split(
+                "_"
+              )[1]
+            }
           </Text>
           {/* <Slider
             style={{ width: width, height: 20, padding: 20 }}
@@ -134,7 +138,6 @@ const styles = StyleSheet.create({
 
   audioCount: {
     textAlign: "right",
-    padding: 15,
     color: color.FONT_LIGHT,
   },
 
@@ -146,7 +149,6 @@ const styles = StyleSheet.create({
 
   audioName: {
     color: color.WHITE,
-    padding: 25,
     paddingBottom: 0,
     fontSize: 16,
   },

@@ -10,7 +10,7 @@ import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
 import * as ScreenOrientation from "expo-screen-orientation";
 import configs from "../misc/config";
-
+import TrackPlayer from "react-native-track-player";
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
   const audioContext = useContext(AudioContext);
@@ -18,13 +18,10 @@ const User = () => {
 
   const singOutHandle = async () => {
     //Çalan şarkı varsa durdur..
-    const status = await stop(audioContext.playbackObj);
+    await TrackPlayer.reset();
+
     audioContext.updateState(audioContext, {
-      playbackObj: audioContext.playbackObj,
-      soundObj: status,
       isPlaying: false,
-      playbackPosition: null,
-      playbackDuration: null,
     });
 
     singOut();

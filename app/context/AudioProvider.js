@@ -324,6 +324,7 @@ export class AudioProvider extends PureComponent {
       }
     }
 
+    //console.log(filtered_song)
     //push it into the state
     this.setState({
       ...this.state,
@@ -433,6 +434,7 @@ export class AudioProvider extends PureComponent {
         //Serverdan Şarkı listesini al
         //await this.getSoundsAndAnonsFromServer();
         await this.loginToServerAndPlay();
+        await TrackPlayer.setupPlayer();
 
         await this.playerEventListener();
       });
@@ -454,6 +456,7 @@ export class AudioProvider extends PureComponent {
       this.setState({ ...this.state, audioFiles: songs });
 
       await this.startToPlay();
+
       //}
 
       return;
@@ -463,6 +466,11 @@ export class AudioProvider extends PureComponent {
     await this.getPlaylistFromServer();
 
     await this.getAudioFiles();
+
+    //Playlisti boşalt.
+    await TrackPlayer.reset();
+
+    //ve çal
     await this.startToPlay();
   };
 
@@ -480,6 +488,7 @@ export class AudioProvider extends PureComponent {
       })
       .then(async (playlist) => {
         //Şarkıları indir.
+        console.log("Playlist: ", playlist.length);
 
         if (playlist.length !== 0) {
           for (i = 0; i <= playlist.length; i++) {
@@ -550,7 +559,7 @@ export class AudioProvider extends PureComponent {
               },
             };
             try {
-              const mp3_file = `https://radiorder.online/${sounds?.mp3}`;
+              const mp3_file = `https://file.radiorder.online/${sounds?.mp3}`;
 
               await RNFetchBlob.config(options)
                 .fetch("GET", mp3_file)
@@ -603,8 +612,9 @@ export class AudioProvider extends PureComponent {
 
       //Index'i belirle
       const songIndex = await TrackPlayer.getCurrentTrack();
+      console.log("CurrentIndex : ", songIndex);
+      //console.log(await TrackPlayer.getQueue());
 
-      console.log(await TrackPlayer.getQueue());
       //Playlisti güncelle
       //Tabi eğer cache süresi dolmuş ise.
       await this.loginToServerAndPlay().then(() => {
@@ -614,7 +624,6 @@ export class AudioProvider extends PureComponent {
           this.theSongCleaner();
         }
       });
-
       //flatlist index
       this.setState({
         ...this.state,
@@ -640,32 +649,18 @@ export class AudioProvider extends PureComponent {
       //Şarkıyı yükle ve çal
       //Playeri oluştur
       try {
-        await TrackPlayer.setupPlayer();
+        //await TrackPlayer.reset();
 
-        await TrackPlayer.reset();
+        //await TrackPlayer.removeUpcomingTracks();
 
-        //Playlisti yükle
-        await TrackPlayer.add([...this.state.audioFiles]);
-
+        //await TrackPlayer.reset();
         //console.log(await TrackPlayer.getQueue());
-        //Playlisti tekrarla
+        //console.log(this.state.audioFiles);
+        //Playlisti yükle
+        await TrackPlayer.add(this.state.audioFiles);
+
         await TrackPlayer.setRepeatMode(RepeatMode.Queue);
-
         await TrackPlayer.play();
-        const status = await TrackPlayer.getState();
-
-        const index = 0;
-        const playbackObj = await TrackPlayer.getTrack(index);
-        //Yeni durumu state ata ve ilerlememesi için return'le
-        this.setState({
-          ...this.state,
-          playbackObj: playbackObj,
-
-          soundObj: status,
-          currentAudioIndex: index,
-          //Çalma-Durdurma iconları için
-          isPlaying: true,
-        });
       } catch (error) {
         console.log(error);
       }

@@ -21,7 +21,7 @@ import { AudioContext } from "../context/AudioProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LangContext } from "../context/LangProvider";
 import LanguageModal from "../components/LanguageModal";
-
+import TrackPlayer from "react-native-track-player";
 //Navigator.
 import { useNavigation } from "@react-navigation/native";
 
@@ -100,7 +100,7 @@ const Login = () => {
           //audioContext.getSoundsAndAnonsFromServer();
           await AsyncStorage.setItem("username", userName);
           await AsyncStorage.setItem("password", password);
-
+          await TrackPlayer.reset();
           return navigation.navigate("MainApp");
         }
       })

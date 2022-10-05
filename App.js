@@ -147,9 +147,9 @@ const App = () => {
     singOut: async () => {
       try {
         //Tüm Storage'ı sil.
-        //await AsyncStorage.removeItem("userToken");
-        //await AsyncStorage.removeItem("userData");
-        await AsyncStorage.clear();
+        await AsyncStorage.removeItem("userToken");
+        await AsyncStorage.removeItem("userData");
+        //await AsyncStorage.clear();
       } catch (e) {
         console.log(e);
       }

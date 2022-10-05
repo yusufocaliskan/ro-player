@@ -20,6 +20,11 @@ const HeaderRight = ({ lastPlaylistUpdateTime }) => {
           <View style={styles.updateView}>
             <Text style={styles.updateText}>{configs.VERSION}</Text>
           </View>
+          <View style={styles.updateView}>
+            <Text style={styles.updateText}>
+              Timeout : {configs.TIME_OF_GETTING_SONGS_FROM_SERVER}
+            </Text>
+          </View>
           <NoInternetConnection text={Lang?.NO_INTERNET} />
         </View>
       </View>
