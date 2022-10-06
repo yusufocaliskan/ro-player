@@ -22,7 +22,7 @@ const HeaderRight = ({ lastPlaylistUpdateTime }) => {
           </View>
           <View style={styles.updateView}>
             <Text style={styles.updateText}>
-              her {configs.TIME_OF_GETTING_SONGS_FROM_SERVER} sn.
+              her {configs.TIME_OF_GETTING_SONGS_FROM_SERVER / 60} dk.
             </Text>
           </View>
           <NoInternetConnection text={Lang?.NO_INTERNET} />

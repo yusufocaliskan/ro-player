@@ -449,8 +449,6 @@ export class AudioProvider extends PureComponent {
     //Cache kontrolü yap.
     if ((await this.cacheControl()) === false) {
       console.log("-------------Reading : CACHETEN-------------");
-
-      console.log("--------Needed: Cacheee-------");
       const songs = JSON.parse(await AsyncStorage.getItem("songs"));
       this.setState({ ...this.state, audioFiles: songs });
 
@@ -461,6 +459,7 @@ export class AudioProvider extends PureComponent {
 
     //Web siteye login ol.
     await this.getPlaylistFromServer();
+    console.log("Internet :", this.state.noInternetConnection);
     if (this.state.noInternetConnection === false) {
       //Playlisti boşalat.
       await TrackPlayer.reset();
@@ -598,15 +597,16 @@ export class AudioProvider extends PureComponent {
       console.log(e);
     });
 
-    TrackPlayer.addEventListener("playback-queue-ended", async (e) => {
-      console.log("--------------------QUEUE ENDEDDDD. --------------");
-      //this.theSongCleaner();
-    });
-
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
 
+      //Logout yapılınca yeniden çağrılıyor.
+      const user_token = await AsyncStorage.getItem("userToken");
+      if (user_token == null) {
+        await TrackPlayer.pause();
+        return false;
+      }
       //Index'i belirle
       const songIndex = await TrackPlayer.getCurrentTrack();
       console.log("CurrentIndex : ", songIndex);
@@ -818,35 +818,32 @@ export class AudioProvider extends PureComponent {
           noInternetConnection: this.state.noInternetConnection,
         }}
       >
-        {this.state.noInternetConnection === false ? (
-          <Modal animationType="slide" visible={this.state.showLoginModal}>
-            <WebView
-              //ref={(r) => (this.state.webView = r)}
-              onNavigationStateChange={(e) => {
-                if (e.loading == false) {
-                  // this.setState({ ...this.state, showLoginModal: false });
-                }
-              }}
-              source={{
-                uri: "https://www.radiorder.online/Radiorder/Giris/r",
-                body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
-                method: "POST",
-              }}
-              onLoad={() => {
-                this.setState({ ...this.state, showLoginModal: false });
-              }}
-              javaScriptEnabled={true}
-              startInLoadingState={true}
-              thirdPartyCookiesEnabled={true}
-              domStorageEnabled={true}
-              bounces={true}
-              //injectedJavaScript={jsCode}
-              geolocationEnabled={true}
-              useWebKit={true}
-            />
-          </Modal>
-        ) : null}
-
+        <Modal animationType="slide" visible={this.state.showLoginModal}>
+          <WebView
+            //ref={(r) => (this.state.webView = r)}
+            onNavigationStateChange={(e) => {
+              if (e.loading == false) {
+                // this.setState({ ...this.state, showLoginModal: false });
+              }
+            }}
+            source={{
+              uri: "https://www.radiorder.online/Radiorder/Giris/r",
+              body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
+              method: "POST",
+            }}
+            onLoad={() => {
+              this.setState({ ...this.state, showLoginModal: false });
+            }}
+            javaScriptEnabled={true}
+            startInLoadingState={true}
+            thirdPartyCookiesEnabled={true}
+            domStorageEnabled={true}
+            bounces={true}
+            //injectedJavaScript={jsCode}
+            geolocationEnabled={true}
+            useWebKit={true}
+          />
+        </Modal>
         {this.state.isDownloading ? (
           <DownloadingGif songName={this.state.currentDownloadedSong} />
         ) : null}

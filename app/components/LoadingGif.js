@@ -21,10 +21,11 @@ const LoadingGif = () => {
     >
       <Logo
         styles={{
-          marginLeft: -40,
-          marginBottom: 10,
-          marginTop: -50,
           height: 200,
+          alignContent: "center",
+          textAlign: "center",
+          alignSelf: "center",
+          marginBottom: 20,
         }}
         color="black"
       />

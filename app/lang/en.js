@@ -49,4 +49,5 @@ export default {
   EXPIRED: "Expired",
   TODAY: "Today",
   REPEAT: "Repeat",
+  LOGIN_ERROR: "Failed to login. The information may be incorrect.",
 };

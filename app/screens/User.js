@@ -9,9 +9,7 @@ import { stop } from "../misc/AudioController";
 import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
 import configs from "../misc/config";
-import TrackPlayer, {
-  AppKilledPlaybackBehavior,
-} from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
   const audioContext = useContext(AudioContext);
@@ -25,9 +23,6 @@ const User = () => {
       await TrackPlayer.removeUpcomingTracks();
       await TrackPlayer.pause();
     }
-    audioContext.updateState(audioContext, {
-      isPlaying: false,
-    });
 
     singOut();
   };

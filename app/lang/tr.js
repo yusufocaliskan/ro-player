@@ -46,4 +46,5 @@ export default {
   EXPIRED: "Süresi doldu",
   TODAY: "Bu gün",
   REPEAT: "Tekrar",
+  LOGIN_ERROR: "Giriş yapılamadı. Bilgiler yanlış olabilir.",
 };

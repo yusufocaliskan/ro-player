@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useEffect, useReducer } from "react";
+import React, { useMemo, useEffect, useReducer } from "react";
 import { LogBox } from "react-native";
 
 import { NavigationContainer } from "@react-navigation/native";
@@ -21,7 +21,7 @@ const codePushOptions = {
 };
 
 //Hataları kaldır.
-//LogBox.ignoreAllLogs();
+LogBox.ignoreAllLogs();
 
 const App = () => {
   //Application başlatılıdğında Bir update var mı yok mu diye bak.

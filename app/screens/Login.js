@@ -1,12 +1,5 @@
-import React, { useState, useContext, useEffect } from "react";
-import {
-  Platform,
-  Text,
-  View,
-  Alert,
-  Dimensions,
-  StyleSheet,
-} from "react-native";
+import React, { useState, useContext } from "react";
+import { Text, View, Alert, StyleSheet, ActivityIndicator } from "react-native";
 import color from "../misc/color";
 import config from "../misc/config";
 import Logo from "../components/Logo";
@@ -15,13 +8,12 @@ import Button from "../components/form/Button";
 import { XMLParser } from "fast-xml-parser";
 import axios from "axios";
 import { newAuthContext } from "../context/newAuthContext";
-import { AudioContext } from "../context/AudioProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LangContext } from "../context/LangProvider";
 import LanguageModal from "../components/LanguageModal";
-import TrackPlayer from "react-native-track-player";
 //Navigator.
 import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const Login = () => {
   // Context
@@ -31,10 +23,13 @@ const Login = () => {
   const [password, setPassword] = useState();
   const { adminSingIn, singIn } = useContext(newAuthContext);
   const { Lang } = useContext(LangContext);
+  const [checking, setChecking] = useState(false);
+  const [failedToLogin, setFailedToLogin] = useState(false);
 
   const LoginAction = async () => {
     //Kullanıcı bilgileri boş mu?
-
+    setChecking(true);
+    setFailedToLogin(false);
     if (userName == "" || password == "") {
       return Alert.alert("Hata", "Bilgileri yaz.", [{ text: "Tamam." }]);
     }
@@ -79,13 +74,13 @@ const Login = () => {
         };
         const parser = new XMLParser(options);
         const jObj = parser.parse(getSoapBody(resData.data));
-
+        setChecking(false);
         //Giriş Hatalı mı?
         if (jObj.Basarili == false) {
-          Alert.alert("Hata", "Giriş yapılamadı. Bilgiler yanlış olabilir.", [
-            { text: "Tamam" },
-          ]);
-
+          setFailedToLogin(true);
+          setTimeout(() => {
+            setFailedToLogin(false);
+          }, 3000);
           return false;
         }
 
@@ -126,6 +121,13 @@ const Login = () => {
     <View style={styles.container}>
       <Logo styles={styles.logo} />
       {/* <Text style={{ color: "white" }}>{Platform.isTV.toString()}</Text> */}
+      {failedToLogin === true ? (
+        <View style={styles.message}>
+          <MaterialIcons name="error-outline" size={24} color={color.WHITE} />
+          <Text style={styles.messageText}>{Lang?.LOGIN_ERROR}</Text>
+        </View>
+      ) : null}
+
       <Input
         type="text"
         placeholder={Lang?.USER_NAME}
@@ -141,11 +143,15 @@ const Login = () => {
         value={password}
         setValue={setPassword}
       />
-      <Button
-        onPress={LoginAction}
-        style={styles.loginButton}
-        text={Lang?.LOGIN}
-      />
+      {checking == false ? (
+        <Button
+          onPress={LoginAction}
+          style={styles.loginButton}
+          text={Lang?.LOGIN}
+        />
+      ) : (
+        <ActivityIndicator size="large" color={color.WHITE} />
+      )}
 
       <View style={styles.languageView}>
         <LanguageModal />
@@ -174,11 +180,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   message: {
-    marginBottom: 20,
+    marginBottom: 10,
+    backgroundColor: color.BLUE,
+    padding: 5,
+    borderRadius: 5,
+    flexDirection: "row",
   },
   messageText: {
     color: color.WHITE,
     fontSize: 16,
+    marginLeft: 10,
   },
   logo: {
     width: 300,
