@@ -149,6 +149,7 @@ const App = () => {
         //Tüm Storage'ı sil.
         await AsyncStorage.removeItem("userToken");
         await AsyncStorage.removeItem("userData");
+
         //await AsyncStorage.clear();
       } catch (e) {
         console.log(e);
@@ -185,6 +186,7 @@ const App = () => {
   if (loadingState.isLoading) {
     return <LoadingGif />;
   }
+
   return (
     <LangProvider>
       <newAuthContext.Provider value={authContext}>

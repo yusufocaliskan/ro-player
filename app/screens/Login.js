@@ -6,8 +6,6 @@ import {
   Alert,
   Dimensions,
   StyleSheet,
-  KeyboardAvoidingView,
-  TouchableOpacity,
 } from "react-native";
 import color from "../misc/color";
 import config from "../misc/config";
@@ -31,9 +29,8 @@ const Login = () => {
   const navigation = useNavigation();
   const [userName, setUserName] = useState();
   const [password, setPassword] = useState();
-  const { adminSingIn, singIn, test } = useContext(newAuthContext);
-  const { Lang, selectedLang, updateSelectedLan } = useContext(LangContext);
-  const audioContext = useContext(AudioContext);
+  const { adminSingIn, singIn } = useContext(newAuthContext);
+  const { Lang } = useContext(LangContext);
 
   const LoginAction = async () => {
     //Kullanıcı bilgileri boş mu?
@@ -100,7 +97,7 @@ const Login = () => {
           //audioContext.getSoundsAndAnonsFromServer();
           await AsyncStorage.setItem("username", userName);
           await AsyncStorage.setItem("password", password);
-          await TrackPlayer.reset();
+          //await TrackPlayer.reset();
           return navigation.navigate("MainApp");
         }
       })
@@ -144,18 +141,24 @@ const Login = () => {
         value={password}
         setValue={setPassword}
       />
-      <Button onPress={LoginAction} text={Lang?.LOGIN} />
-      <LanguageModal />
-      <View style={styles.bottomText}>
-        <Text style={{ color: "#666" }}>{Lang?.RADI_OFFICIAL}</Text>
-        <Text style={{ color: "#666", letterSpacing: 3 }}>
-          ({config.VERSION})
-        </Text>
+      <Button
+        onPress={LoginAction}
+        style={styles.loginButton}
+        text={Lang?.LOGIN}
+      />
+
+      <View style={styles.languageView}>
+        <LanguageModal />
+        <View style={styles.bottomText}>
+          <Text style={{ color: "#666" }}>{Lang?.RADI_OFFICIAL}</Text>
+          <Text style={{ color: "#666", letterSpacing: 3 }}>
+            ({config.VERSION})
+          </Text>
+        </View>
       </View>
     </View>
   );
 };
-const { width } = Dimensions.get("screen");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -163,12 +166,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: color.BLACK,
   },
-
+  loginButton: {
+    marginTop: 10,
+  },
   bottomText: {
-    flex: 1,
-    justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 40,
+    marginTop: 10,
   },
   message: {
     marginBottom: 20,
@@ -178,10 +181,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   logo: {
-    width: "30%",
-    marginTop: "20%",
-    marginBottom: "2%",
-    height: "30%",
+    width: 300,
+    marginTop: 40,
+    marginBottom: 10,
+    height: 130,
+  },
+  languageView: {
+    position: "absolute",
+    top: 50,
+    alignItems: "center",
+    right: 50,
   },
 });
 

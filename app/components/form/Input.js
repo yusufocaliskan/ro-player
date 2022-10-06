@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.WHITE,
     width: 300,
     borderRadius: 50,
-    padding: 10,
+    padding: 8,
     paddingHorizontal: 50,
     fontSize: 16,
     borderWidth: 4,
@@ -51,14 +51,14 @@ const styles = StyleSheet.create({
 
   formField: {
     position: "relative",
-    marginBottom: 30,
+    marginBottom: 10,
   },
 
   icon: {
     color: color.BLACK,
     position: "absolute",
     left: 15,
-    top: 15,
+    top: 12,
     zIndex: 100,
     opacity: 0.4,
   },

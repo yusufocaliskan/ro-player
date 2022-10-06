@@ -8,9 +8,10 @@ import color from "../misc/color";
 import { stop } from "../misc/AudioController";
 import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
-import * as ScreenOrientation from "expo-screen-orientation";
 import configs from "../misc/config";
-import TrackPlayer from "react-native-track-player";
+import TrackPlayer, {
+  AppKilledPlaybackBehavior,
+} from "react-native-track-player";
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
   const audioContext = useContext(AudioContext);
@@ -18,8 +19,12 @@ const User = () => {
 
   const singOutHandle = async () => {
     //Çalan şarkı varsa durdur..
-    await TrackPlayer.reset();
-
+    const playerState = await TrackPlayer.getState();
+    if (playerState == "playing") {
+      await TrackPlayer.reset();
+      await TrackPlayer.removeUpcomingTracks();
+      await TrackPlayer.pause();
+    }
     audioContext.updateState(audioContext, {
       isPlaying: false,
     });
@@ -138,10 +143,11 @@ const styles = StyleSheet.create({
     height: 200,
   },
   userImage: {
-    width: 150,
-    height: 150,
+    width: 80,
+    marginTop: 50,
+    height: 80,
     borderRadius: 100,
-    borderWidth: 5,
+    borderWidth: 2,
     borderColor: color.RED,
   },
 
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
   },
   logOutButton: {
     backgroundColor: color.RED,
-    marginTop: 50,
+    marginTop: 10,
     opacity: 0.5,
     padding: 5,
     width: 130,

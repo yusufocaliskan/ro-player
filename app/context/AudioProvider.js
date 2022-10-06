@@ -3,17 +3,12 @@ import { Text, Modal, StyleSheet, View, Alert } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
-import Orientation from "react-native-orientation-locker";
-import { Audio } from "expo-av";
-import TrackPlayer, { RepeatMode, Event } from "react-native-track-player";
+import TrackPlayer, { RepeatMode } from "react-native-track-player";
 import {
   getCurrentDate,
-  storeAudioForNextOpening,
   getDifferenceBetweenTwoHours,
   convertSecondToMillisecond,
-  convertHourToMilliseconds,
   clearFileName,
-  getTheTime,
 } from "../misc/Helper";
 import RNFetchBlob from "rn-fetch-blob";
 import DownloadingGif from "../components/DownloadingGif";
@@ -49,6 +44,7 @@ export class AudioProvider extends PureComponent {
       loggingIsDone: false,
 
       debug: null,
+
       //Mediadan alınan şarkılar
       audioFiles: [],
       anonsFiles: [],
@@ -389,7 +385,9 @@ export class AudioProvider extends PureComponent {
           const songs = JSON.parse(await AsyncStorage.getItem("songs"));
           this.setState({ ...this.state, audioFiles: songs });
           //await this.getAudioFiles();
+          //  await TrackPlayer.reset();
           this.startToPlay();
+
           this.setState({ ...this.state, noInternetConnection: true });
           //  await this.getAnonsFiles();
         } else {
@@ -414,8 +412,6 @@ export class AudioProvider extends PureComponent {
    * Çalıştığında
    */
   componentDidMount = () => {
-    //this.keepWorkingInBackground();
-
     //DB Bağlantı, dosya izni ve verileri databaseden all.
     this.getUserInfo();
     this.dbConnection();
@@ -433,9 +429,13 @@ export class AudioProvider extends PureComponent {
         //Admin ayarları
         //Serverdan Şarkı listesini al
         //await this.getSoundsAndAnonsFromServer();
-        await this.loginToServerAndPlay();
-        await TrackPlayer.setupPlayer();
+        const service = await TrackPlayer.isServiceRunning();
 
+        if (service == false) {
+          await TrackPlayer.setupPlayer();
+        }
+
+        await this.loginToServerAndPlay();
         await this.playerEventListener();
       });
 
@@ -450,25 +450,22 @@ export class AudioProvider extends PureComponent {
     if ((await this.cacheControl()) === false) {
       console.log("-------------Reading : CACHETEN-------------");
 
-      //if (this.state.audioFiles.length == 0) {
       console.log("--------Needed: Cacheee-------");
       const songs = JSON.parse(await AsyncStorage.getItem("songs"));
       this.setState({ ...this.state, audioFiles: songs });
 
       await this.startToPlay();
 
-      //}
-
       return;
     }
 
     //Web siteye login ol.
     await this.getPlaylistFromServer();
-
-    await this.getAudioFiles();
-
-    //Playlisti boşalt.
-    await TrackPlayer.reset();
+    if (this.state.noInternetConnection === false) {
+      //Playlisti boşalat.
+      await TrackPlayer.reset();
+      await this.getAudioFiles();
+    }
 
     //ve çal
     await this.startToPlay();
@@ -559,7 +556,7 @@ export class AudioProvider extends PureComponent {
               },
             };
             try {
-              const mp3_file = `https://file.radiorder.online/${sounds?.mp3}`;
+              const mp3_file = `https://radiorder.online/${sounds?.mp3}`;
 
               await RNFetchBlob.config(options)
                 .fetch("GET", mp3_file)
@@ -821,32 +818,34 @@ export class AudioProvider extends PureComponent {
           noInternetConnection: this.state.noInternetConnection,
         }}
       >
-        <Modal animationType="slide" visible={this.state.showLoginModal}>
-          <WebView
-            //ref={(r) => (this.state.webView = r)}
-            onNavigationStateChange={(e) => {
-              if (e.loading == false) {
-                // this.setState({ ...this.state, showLoginModal: false });
-              }
-            }}
-            source={{
-              uri: "https://www.radiorder.online/Radiorder/Giris/r",
-              body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
-              method: "POST",
-            }}
-            onLoad={() => {
-              this.setState({ ...this.state, showLoginModal: false });
-            }}
-            javaScriptEnabled={true}
-            startInLoadingState={true}
-            thirdPartyCookiesEnabled={true}
-            domStorageEnabled={true}
-            bounces={true}
-            //injectedJavaScript={jsCode}
-            geolocationEnabled={true}
-            useWebKit={true}
-          />
-        </Modal>
+        {this.state.noInternetConnection === false ? (
+          <Modal animationType="slide" visible={this.state.showLoginModal}>
+            <WebView
+              //ref={(r) => (this.state.webView = r)}
+              onNavigationStateChange={(e) => {
+                if (e.loading == false) {
+                  // this.setState({ ...this.state, showLoginModal: false });
+                }
+              }}
+              source={{
+                uri: "https://www.radiorder.online/Radiorder/Giris/r",
+                body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
+                method: "POST",
+              }}
+              onLoad={() => {
+                this.setState({ ...this.state, showLoginModal: false });
+              }}
+              javaScriptEnabled={true}
+              startInLoadingState={true}
+              thirdPartyCookiesEnabled={true}
+              domStorageEnabled={true}
+              bounces={true}
+              //injectedJavaScript={jsCode}
+              geolocationEnabled={true}
+              useWebKit={true}
+            />
+          </Modal>
+        ) : null}
 
         {this.state.isDownloading ? (
           <DownloadingGif songName={this.state.currentDownloadedSong} />
