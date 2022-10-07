@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useReducer } from "react";
+import React, { useMemo, useEffect, useReducer, useState } from "react";
 import { LogBox } from "react-native";
 
 import { NavigationContainer } from "@react-navigation/native";
@@ -28,28 +28,38 @@ const App = () => {
   //Bu update application için
   //Varsa hemen indir..IMMEDIATE IMMEDIATE IMMEDIATE :)
   //start: -------------------------------------------
-  codePush.sync({
-    updateDialog: false,
-    installMode: codePush.InstallMode.IMMEDIATE,
-  });
+  // const [installingUpdates, setInstallingUpdates] = useState(true);
+  codePush.sync(
+    {
+      updateDialog: false,
+      installMode: codePush.InstallMode.IMMEDIATE,
+    }
+    // (status) => {
+    //   switch (status) {
+    //     case codePush.SyncStatus.DOWNLOADING_PACKAGE:
+    //       console.log("------ -------DONWLOADINNN GGG----");
+    //       setInstallingUpdates(true);
+    //       timeout = 5000;
+    //       break;
+    //     case codePush.SyncStatus.INSTALLING_UPDATE:
+    //       console.log("-------------Installing----");
+    //       setInstallingUpdates(true);
+    //       timeout = 5000;
+    //       break;
+    //     case codePush.SyncStatus.UPDATE_INSTALLED:
+    //       console.log("-------------INSTALLLEEDD----");
+    //       setInstallingUpdates(false);
+    //       timeout = 0;
+    //       break;
+    //     case codePush.SyncStatus.UP_TO_DATE:
+    //       console.log("------ -------The Application is up_to_date----");
+    //       setInstallingUpdates(false);
+    //       timeout = 1000;
+    //       break;
+    //   }
+    // }
+  );
   //end: -------------------------------------------
-
-  // codePush.sync(
-  //   { updateDialog: false },
-  //   (status) => {
-  //     switch (status) {
-  //       case codePush.SyncStatus.DOWNLOADING_PACKAGE:
-  //         console.log("------ -------DONWLOADINNN GGG----");
-  //         break;
-  //       case codePush.SyncStatus.INSTALLING_UPDATE:
-  //         console.log("-------------INSTALLLEEDD----");
-  //         break;
-  //     }
-  //   },
-  //   ({ receivedBytes, totalBytes }) => {
-  //     /* Update download modal progress */
-  //   }
-  // );
 
   //default değerler
   const initialLoginState = {
@@ -182,7 +192,6 @@ const App = () => {
       }
     }, 1000);
   }, []);
-
   if (loadingState.isLoading) {
     return <LoadingGif />;
   }

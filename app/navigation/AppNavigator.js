@@ -37,7 +37,7 @@ const AppNavigator = () => {
       }}
     >
       <Tab.Screen
-        name={Lang?.PLAYLIST || "Çalma Listesi"}
+        name={Lang?.PLAYLIST.toUpperCase() || "Çalma Listesi"}
         component={AudioList}
         context={context}
         options={{

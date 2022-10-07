@@ -352,16 +352,16 @@ export class AudioProvider extends PureComponent {
       new Date().getTime()
     );
 
-    // console.log(
-    //   "Anons Last",
-    //   new Date(lastAnonsUpdateTime),
-    //   "Anons Time:",
-    //   new Date()
-    // );
-    // console.log("Anons Time: ", new Date().getTime());
-    // console.log("Anons TimeOut: ", convertSecondToMillisecond(timeOut));
-    // console.log("diff ", diffTime);
-    // console.log("Cont", diffTime > convertSecondToMillisecond(timeOut));
+    console.log(
+      "Anons Last",
+      new Date(lastAnonsUpdateTime),
+      "Anons Time:",
+      new Date()
+    );
+    console.log("Anons Time: ", new Date().getTime());
+    console.log("Anons TimeOut: ", convertSecondToMillisecond(timeOut));
+    console.log("diff ", diffTime);
+    console.log("Cont", diffTime > convertSecondToMillisecond(timeOut));
 
     if (diffTime > convertSecondToMillisecond(timeOut)) {
       return true;
@@ -386,7 +386,7 @@ export class AudioProvider extends PureComponent {
           this.setState({ ...this.state, audioFiles: songs });
           //await this.getAudioFiles();
           //  await TrackPlayer.reset();
-          this.startToPlay();
+          //this.startToPlay();
 
           this.setState({ ...this.state, noInternetConnection: true });
           //  await this.getAnonsFiles();
@@ -435,6 +435,10 @@ export class AudioProvider extends PureComponent {
           await TrackPlayer.setupPlayer();
         }
 
+        const lastTime = await AsyncStorage.getItem(
+          "Last_Playlist_Update_Time"
+        );
+        this.setState({ ...this.state, lastPlaylistUpdateTime: lastTime });
         await this.loginToServerAndPlay();
         await this.playerEventListener();
       });
@@ -448,7 +452,8 @@ export class AudioProvider extends PureComponent {
   loginToServerAndPlay = async () => {
     //Cache kontrolü yap.
     if ((await this.cacheControl()) === false) {
-      console.log("-------------Reading : CACHETEN-------------");
+      console.log("------------EV:-Reading : CACHETEN-------------");
+
       const songs = JSON.parse(await AsyncStorage.getItem("songs"));
       this.setState({ ...this.state, audioFiles: songs });
 
@@ -457,10 +462,15 @@ export class AudioProvider extends PureComponent {
       return;
     }
 
+    this.manualUpdate();
+  };
+
+  manualUpdate = async () => {
     //Web siteye login ol.
     await this.getPlaylistFromServer();
-    console.log("Internet :", this.state.noInternetConnection);
+
     if (this.state.noInternetConnection === false) {
+      console.log("--------------------HEREEE--------------");
       //Playlisti boşalat.
       await TrackPlayer.reset();
       await this.getAudioFiles();
@@ -472,8 +482,6 @@ export class AudioProvider extends PureComponent {
 
   //Playlisti alır..
   getPlaylistFromServer = async () => {
-    this.setState({ ...this.state, showLoginModal: true });
-
     await axios
       .post("https://www.radiorder.online/Profil/MobilePlaylistYukle", {
         from: "mobileapp",
@@ -485,7 +493,7 @@ export class AudioProvider extends PureComponent {
       .then(async (playlist) => {
         //Şarkıları indir.
         console.log("Playlist: ", playlist.length);
-
+        this.setState({ ...this.state, noInternetConnection: false });
         if (playlist.length !== 0) {
           for (i = 0; i <= playlist.length; i++) {
             await this.DownloadSongsFromServer(playlist[i], "sound").then(
@@ -511,6 +519,7 @@ export class AudioProvider extends PureComponent {
             "Last_Playlist_Update_Time",
             new Date().toISOString()
           );
+          this.state.lastPlaylistUpdateTime = new Date().toISOString();
         }
       })
       .catch(async (e) => {
@@ -600,7 +609,12 @@ export class AudioProvider extends PureComponent {
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       console.log("------------ . NEXT: Song .----------");
-
+      NetInfo.fetch().then(async (connection) => {
+        console.log(connection);
+        if (connection.isConnected == true) {
+          this.setState({ ...this.state, noInternetConnection: false });
+        }
+      });
       //Logout yapılınca yeniden çağrılıyor.
       const user_token = await AsyncStorage.getItem("userToken");
       if (user_token == null) {
@@ -816,34 +830,38 @@ export class AudioProvider extends PureComponent {
           playListCrossChecking: this.state.playListCrossChecking,
           anonsCrossChecking: this.state.anonsCrossChecking,
           noInternetConnection: this.state.noInternetConnection,
+          manualUpdate: this.manualUpdate,
         }}
       >
-        <Modal animationType="slide" visible={this.state.showLoginModal}>
-          <WebView
-            //ref={(r) => (this.state.webView = r)}
-            onNavigationStateChange={(e) => {
-              if (e.loading == false) {
-                // this.setState({ ...this.state, showLoginModal: false });
-              }
-            }}
-            source={{
-              uri: "https://www.radiorder.online/Radiorder/Giris/r",
-              body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
-              method: "POST",
-            }}
-            onLoad={() => {
-              this.setState({ ...this.state, showLoginModal: false });
-            }}
-            javaScriptEnabled={true}
-            startInLoadingState={true}
-            thirdPartyCookiesEnabled={true}
-            domStorageEnabled={true}
-            bounces={true}
-            //injectedJavaScript={jsCode}
-            geolocationEnabled={true}
-            useWebKit={true}
-          />
-        </Modal>
+        {this.state.noInternetConnection == false ? (
+          <Modal animationType="slide" visible={this.state.showLoginModal}>
+            <WebView
+              //ref={(r) => (this.state.webView = r)}
+              onNavigationStateChange={(e) => {
+                if (e.loading == false) {
+                  // this.setState({ ...this.state, showLoginModal: false });
+                }
+              }}
+              source={{
+                uri: "https://www.radiorder.online/Radiorder/Giris/r",
+                body: `DilSec=en&email=${this.state.username}&password=${this.state.password}&from=mobileapp`,
+                method: "POST",
+              }}
+              onLoad={() => {
+                this.setState({ ...this.state, showLoginModal: false });
+              }}
+              javaScriptEnabled={true}
+              startInLoadingState={true}
+              thirdPartyCookiesEnabled={true}
+              domStorageEnabled={true}
+              bounces={true}
+              //injectedJavaScript={jsCode}
+              geolocationEnabled={true}
+              useWebKit={true}
+            />
+          </Modal>
+        ) : null}
+
         {this.state.isDownloading ? (
           <DownloadingGif songName={this.state.currentDownloadedSong} />
         ) : null}
