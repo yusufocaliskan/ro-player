@@ -1,24 +1,18 @@
 import React, { PureComponent, Component } from "react";
-import { Dimensions, FlatList, View, Text, StyleSheet } from "react-native";
+import { FlatList, View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { AudioContext } from "../context/AudioProvider";
 import AudioListItem from "../components/AudioListItem";
 import color from "../misc/color";
 import Screen from "../components/Screen";
-import ListFooterComponent from "../components/ListFooterComponent";
-import { storeAudioForNextOpening } from "../misc/Helper";
 import AnonsModal from "../components/AnonsModal";
-import * as ScreenOrientation from "expo-screen-orientation";
 import TrackPlayer from "react-native-track-player";
 
-//Expo-av şarkıları çalar.
-import { Audio } from "expo-av";
-
 //Controller
-import { play, pause, resume, playNext } from "../misc/AudioController";
 
 import "react-native-get-random-values";
 import LoadingSimple from "../components/LoadingSimple";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export class AudioList extends Component {
   static contextType = AudioContext;
@@ -32,7 +26,6 @@ export class AudioList extends Component {
       offset: 0,
       flatListRef: null,
       flatListScrollDirection: null,
-      flatListCurrentScrollIndex: this.context?.flatListScrollIndex,
     };
 
     this.currentItem = {};
@@ -48,6 +41,8 @@ export class AudioList extends Component {
       this.context;
     const status = await TrackPlayer.getState();
     const currentAudioIndex = this.context.currentAudioIndex;
+    //const currentAudioIndex =  JSON.parse(await AsyncStorage.getItem("lastAudioIndex"));
+
     //const currentAudioIndex = await TrackPlayer.getCurrentTrack();
 
     if (currentAudioIndex == index && status == "playing") {
@@ -67,11 +62,13 @@ export class AudioList extends Component {
     //Şarkıya geç
     else {
       TrackPlayer.skip(index);
+
       TrackPlayer.play();
       updateState(this.context, {
         currentAudioIndex: index,
         isPlaying: true,
       });
+      AsyncStorage.setItem("lastAudioIndex", JSON.stringify(index));
     }
 
     return;
@@ -121,6 +118,7 @@ export class AudioList extends Component {
     if (!this.context?.audioFiles?.length) {
       return <LoadingSimple />;
     }
+    console.log("-----------INDEX: ", this.context.currentAudioIndex);
     return (
       <>
         <Screen>
@@ -162,7 +160,7 @@ export class AudioList extends Component {
                 ]}
                 duration={item.duration}
                 isPlaying={this.context.isPlaying}
-                activeListItem={this.context.currentAudioIndex === index}
+                activeListItem={this.context.activeFlatListIndex === index}
                 item={item}
                 index={index}
                 keyy={index + 1}
@@ -175,7 +173,7 @@ export class AudioList extends Component {
             <View style={styles.playlistLen}>
               <View style={[styles.playlistLenTextView]}>
                 <Text style={styles.playlistLenText}>
-                  {this.context?.currentAudioIndex + 1}
+                  {this.context?.flatListScrollIndex + 1}
                 </Text>
                 <Text style={styles.playlistLenText}>/</Text>
                 <Text style={styles.playlistLenText}>

@@ -1,5 +1,11 @@
 import React, { useContext } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import NoInternetConnection from "./NoInternetConnection";
 import color from "../misc/color";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -22,20 +28,6 @@ const HeaderRight = () => {
       {configs.DEBUG ? <Debug /> : null}
       <View style={styles.header}>
         <View style={styles.headerRight}>
-          <View style={[styles.updateView, styles.playlistUpdate]}>
-            <TouchableOpacity
-              onPress={() => context.manualUpdate()}
-              style={styles.versionIcon}
-            >
-              <MaterialIcons
-                name="system-update-alt"
-                size={16}
-                color={color.WHITE}
-              />
-              <Text style={styles.playlistUpdateText}>Manual Update</Text>
-            </TouchableOpacity>
-          </View>
-
           <View style={styles.updateView}>
             <MaterialIcons name="update" size={18} color={color.BLACK} />
             <Text style={styles.updateText}>{lastPlaylistUpdateTime}</Text>

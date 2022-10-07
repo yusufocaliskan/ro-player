@@ -2,13 +2,16 @@ import React, { useContext } from "react";
 import { ActivityIndicator, View, Text, StyleSheet } from "react-native";
 import color from "../misc/color";
 import { LangContext } from "../context/LangProvider";
-const DownloadingGif = ({ songName }) => {
+const DownloadingGif = ({ songName, countDownloadedSong, totalSong }) => {
   const { Lang } = useContext(LangContext);
   return (
     <View style={styles.wrapper}>
       <View style={styles.row}>
         <ActivityIndicator style={styles.spinner} color={color.RED} />
         <Text style={styles.text}>{Lang?.DOWNLOADS_CONTINUE}</Text>
+        <Text style={styles.text}>
+          {countDownloadedSong}/{totalSong}
+        </Text>
       </View>
       <View style={styles.row}>
         <Text style={styles.songName}>{songName}</Text>

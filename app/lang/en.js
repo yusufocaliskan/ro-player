@@ -50,4 +50,5 @@ export default {
   TODAY: "Today",
   REPEAT: "Repeat",
   LOGIN_ERROR: "Failed to login. The information may be incorrect.",
+  MANUAL_UPDATE: "Manual Update",
 };

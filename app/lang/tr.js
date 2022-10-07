@@ -47,4 +47,5 @@ export default {
   TODAY: "Bu gün",
   REPEAT: "Tekrar",
   LOGIN_ERROR: "Giriş yapılamadı. Bilgiler yanlış olabilir.",
+  MANUAL_UPDATE: "Elle Güncelle",
 };
