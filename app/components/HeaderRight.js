@@ -1,11 +1,5 @@
-import React, { useContext } from "react";
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import React, { useContext, useState, useEffect } from "react";
+import { StyleSheet, View, Text } from "react-native";
 import NoInternetConnection from "./NoInternetConnection";
 import color from "../misc/color";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -23,6 +17,19 @@ const HeaderRight = () => {
   const lastPlaylistUpdateTime = new Date(
     context.lastPlaylistUpdateTime
   ).toLocaleTimeString();
+
+  // const [currentTime, setCurrentTime] = useState();
+  // useEffect(() => {
+  //   const time = new Date().toLocaleTimeString();
+  //   const interval = setInterval(() => {
+  //     setCurrentTime(time);
+  //   }, 36000);
+
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  // });
+
   return (
     <>
       {configs.DEBUG ? <Debug /> : null}
@@ -30,11 +37,13 @@ const HeaderRight = () => {
         <View style={styles.headerRight}>
           <View style={styles.updateView}>
             <MaterialIcons name="update" size={18} color={color.BLACK} />
-            <Text style={styles.updateText}>{lastPlaylistUpdateTime}</Text>
+            <Text style={styles.updateText}>
+              Update: {lastPlaylistUpdateTime.split(" ")[0]}
+            </Text>
           </View>
           <View style={[styles.updateView, styles.versionIcon]}>
             <Octicons name="versions" size={16} color="black" />
-            <Text style={styles.updateText}>{configs.VERSION}</Text>
+            <Text style={styles.updateText}>v{configs.VERSION}</Text>
           </View>
           <View style={[styles.updateView, styles.versionIcon]}>
             <Entypo name="time-slot" size={16} color="black" />
@@ -42,6 +51,10 @@ const HeaderRight = () => {
               her {configs.TIME_OF_GETTING_SONGS_FROM_SERVER / 60} dk.
             </Text>
           </View>
+
+          {/* <View style={[styles.updateView, styles.versionIcon]}>
+            <Text>{currentTime}</Text>
+          </View> */}
           <NoInternetConnection text={Lang?.NO_INTERNET} />
         </View>
       </View>

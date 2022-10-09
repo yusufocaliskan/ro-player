@@ -48,4 +48,5 @@ export default {
   REPEAT: "Tekrar",
   LOGIN_ERROR: "Giriş yapılamadı. Bilgiler yanlış olabilir.",
   MANUAL_UPDATE: "Elle Güncelle",
+  VERSION_NUMBER: `Version numarası  `,
 };

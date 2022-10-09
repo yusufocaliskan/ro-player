@@ -89,7 +89,7 @@ export class AudioList extends Component {
   flatListScrollToIndex = (index) => {
     //this.context?.flatListScrollIndex
     this.flatListRef?.scrollToIndex({
-      animated: true,
+      animated: false,
       index: index,
     });
   };
@@ -102,9 +102,9 @@ export class AudioList extends Component {
 
   eventListener = () => {
     TrackPlayer.addEventListener("playback-track-changed", async () => {
-      const songIndex = await TrackPlayer.getCurrentTrack();
-
-      this.flatListScrollToIndex(songIndex);
+      await TrackPlayer.getCurrentTrack().then((index) => {
+        this.flatListScrollToIndex(index);
+      });
     });
   };
 
@@ -118,7 +118,7 @@ export class AudioList extends Component {
     if (!this.context?.audioFiles?.length) {
       return <LoadingSimple />;
     }
-    console.log("-----------INDEX: ", this.context.currentAudioIndex);
+
     return (
       <>
         <Screen>
@@ -160,7 +160,10 @@ export class AudioList extends Component {
                 ]}
                 duration={item.duration}
                 isPlaying={this.context.isPlaying}
-                activeListItem={this.context.activeFlatListIndex === index}
+                activeListItem={
+                  this.context.activeFlatListIndex === index &&
+                  this.context.isPlaying == true
+                }
                 item={item}
                 index={index}
                 keyy={index + 1}

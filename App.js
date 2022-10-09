@@ -21,6 +21,7 @@ const codePushOptions = {
 };
 
 //Hataları kaldır.
+//LogBox.ignoreAllLogs();
 LogBox.ignoreAllLogs();
 
 const App = () => {
@@ -34,27 +35,23 @@ const App = () => {
       updateDialog: false,
       installMode: codePush.InstallMode.IMMEDIATE,
     }
-    // (status) => {
+    //  (status) => {
     //   switch (status) {
     //     case codePush.SyncStatus.DOWNLOADING_PACKAGE:
     //       console.log("------ -------DONWLOADINNN GGG----");
-    //       setInstallingUpdates(true);
-    //       timeout = 5000;
+    //       Tts.speak("Downloads new version");
     //       break;
     //     case codePush.SyncStatus.INSTALLING_UPDATE:
     //       console.log("-------------Installing----");
-    //       setInstallingUpdates(true);
-    //       timeout = 5000;
+    //       Tts.speak("Intalling new updates");
     //       break;
     //     case codePush.SyncStatus.UPDATE_INSTALLED:
     //       console.log("-------------INSTALLLEEDD----");
-    //       setInstallingUpdates(false);
-    //       timeout = 0;
+    //       Tts.speak("Updates installed");
     //       break;
     //     case codePush.SyncStatus.UP_TO_DATE:
     //       console.log("------ -------The Application is up_to_date----");
-    //       setInstallingUpdates(false);
-    //       timeout = 1000;
+    //       Tts.speak(`The Application version is ${configs.VERSION}`);
     //       break;
     //   }
     // }
@@ -156,9 +153,14 @@ const App = () => {
     //Çıkış yaptığında
     singOut: async () => {
       try {
-        //Tüm Storage'ı sil.
+        //Sessionı kapat
         await AsyncStorage.removeItem("userToken");
         await AsyncStorage.removeItem("userData");
+
+        //Son güncelleme tarihi kapat
+        //Bazen logout olduduktan sonra
+        //Giriş yapıldığında cacheten okuyor.
+        await AsyncStorage.removeItem("Last_Playlist_Update_Time");
 
         //await AsyncStorage.clear();
       } catch (e) {

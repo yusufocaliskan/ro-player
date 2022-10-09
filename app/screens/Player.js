@@ -10,8 +10,6 @@ import Slider from "@react-native-community/slider";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import PlayerButton from "../components/PlayerButton";
 import { AudioContext } from "../context/AudioProvider";
-import { pause, play, playNext, resume } from "../misc/AudioController";
-import { storeAudioForNextOpening } from "../misc/Helper";
 import { useNavigation } from "@react-navigation/native";
 const { width } = Dimensions.get("window");
 

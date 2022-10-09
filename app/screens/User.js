@@ -5,7 +5,6 @@ import { AudioContext } from "../context/AudioProvider";
 import Button from "../components/form/Button";
 import { newAuthContext } from "../context/newAuthContext";
 import color from "../misc/color";
-import { stop } from "../misc/AudioController";
 import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
 import configs from "../misc/config";
@@ -120,7 +119,7 @@ const User = () => {
           />
         </View>
         <View>
-          <Text style={styles.Sehir}>{configs.VERSION}</Text>
+          <Text style={styles.Sehir}>v{configs.VERSION}</Text>
         </View>
       </View>
     </Screen>

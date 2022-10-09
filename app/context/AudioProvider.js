@@ -4,6 +4,8 @@ import * as MediaLibrary from "expo-media-library";
 import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
 import TrackPlayer, { RepeatMode } from "react-native-track-player";
+import BackgroundTimer from "react-native-background-timer";
+
 import {
   getCurrentDate,
   getDifferenceBetweenTwoHours,
@@ -12,7 +14,6 @@ import {
 } from "../misc/Helper";
 import RNFetchBlob from "rn-fetch-blob";
 import DownloadingGif from "../components/DownloadingGif";
-
 //Şarkıları listelemek için kullanırlır
 //ScrollView'den daha performanlısdır.
 
@@ -125,15 +126,6 @@ export class AudioProvider extends PureComponent {
 
       player: null,
 
-      //Güncel tarih
-      whatIsTheDate: `${getCurrentDate(
-        new Date()
-      )}T${new Date().toLocaleTimeString({
-        hour12: false,
-        hour: "2-digit",
-        timeZone: "Europe/Istanbul",
-      })}`,
-
       //Playlist güncelleme tarih
       lastPlaylistUpdateTime: null,
       noInternetConnection: false,
@@ -141,6 +133,8 @@ export class AudioProvider extends PureComponent {
 
     this.totalAudioCount = 0;
     this.totalAnonsCount = 0;
+
+    this.inervalCheck4Update = null;
   }
 
   //Hata mesajı göster.
@@ -250,6 +244,7 @@ export class AudioProvider extends PureComponent {
 
     //Ses
     let d = 0;
+
     //for (; d < 5; d++) {
     for (; d < songs?.length; d++) {
       const mp3_file = songs[d].mp3.split("/").pop();
@@ -382,6 +377,9 @@ export class AudioProvider extends PureComponent {
    * Çalıştığında
    */
   componentDidMount = () => {
+    //Version numarasını söyle.
+    //Tts.speak(`Versiyon ${config.VERSION}`);
+
     //DB Bağlantı, dosya izni ve verileri databaseden all.
     this.getUserInfo();
     this.dbConnection();
@@ -401,15 +399,29 @@ export class AudioProvider extends PureComponent {
         //await this.getSoundsAndAnonsFromServer();
         const service = await TrackPlayer.isServiceRunning();
 
+        //Player kurulu ise yeniden kurma
         if (service == false) {
           await TrackPlayer.setupPlayer();
+          await TrackPlayer.setRepeatMode(RepeatMode.Queue);
         }
 
+        //lastAudioIndex'i 0 eşitle
+        AsyncStorage.setItem("lastAudioIndex", JSON.stringify(0));
+
+        //Son updatei state'e ata
         const lastTime = await AsyncStorage.getItem(
           "Last_Playlist_Update_Time"
         );
         this.setState({ ...this.state, lastPlaylistUpdateTime: lastTime });
         await this.loginToServerAndPlay();
+
+        //Güncelleme için yeni interval aç
+        //Her TIME_OF_GETTING_SONGS_FROM_SERVER süre sorran playlisti güncelle
+        this.inervalCheck4Update = BackgroundTimer.runBackgroundTimer(() => {
+          this.check4Update();
+        }, convertSecondToMillisecond(config.TIME_OF_GETTING_SONGS_FROM_SERVER + 5));
+
+        //Eventleri dinle
         await this.playerEventListener();
       });
 
@@ -419,40 +431,84 @@ export class AudioProvider extends PureComponent {
     }
   };
 
+  /**
+   * Interval için kullanıylıyor...
+   * //Yeni güncelleme var mı yok mıu?
+   * //Her TIME_OF_GETTING_SONGS_FROM_SERVER kontrol et
+   */
+  check4Update = async () => {
+    const cacheTimeout = await this.cacheControl();
+    //Çalıyorsa durdur.
+    if (this.state.isPlaying == true && cacheTimeout == true) {
+      await TrackPlayer.pause();
+    }
+
+    //Yeni güncellemeden önce son index'is sakla
+    AsyncStorage.setItem(
+      "lastAudioIndex",
+      JSON.stringify(this.state.currentAudioIndex)
+    );
+
+    //Playlisti güncelle
+    //Tabi eğer cache süresi dolmuş ise.
+    await this.loginToServerAndPlay();
+  };
+
+  /**
+   * Cache'ten mi okuyamlım playlist yoksa
+   * Servera gidip alalım mı?
+   */
   loginToServerAndPlay = async () => {
     //Cache kontrolü yap.
+    //Cache zamanı dolmamış ise playlisti olduğu gibi
+    //kullanmaya devam et
     if ((await this.cacheControl()) === false) {
-      console.log("------------EV:-Reading : CACHETEN-------------");
+      console.log("------------ Reading from Cache -------------");
 
+      //Cache'i al
       const songs = JSON.parse(await AsyncStorage.getItem("songs"));
       this.setState({ ...this.state, audioFiles: songs });
 
-      await this.startToPlay();
+      //Çalmağa başala.
+      //await TrackPlayer.reset();
+      if (this.state.isPlaying == false) {
+        //İlk açıldığında cache zamanı ise cache'ten çal.
+        await this.startToPlay();
+      }
 
       return;
     }
 
-    this.manualUpdate();
-  };
-
-  manualUpdate = async () => {
-    //Web siteye login ol.
-    await this.getPlaylistFromServer();
-
+    //Cache zamanı geçti ise
+    //Servera git ve yeni playlist var mı diye kontrol et.
     if (this.state.noInternetConnection === false) {
-      console.log("--------------------HEREEE--------------");
-      //Playlisti boşalat.
-      await TrackPlayer.reset();
-      await this.getAudioFiles();
+      this.setState({ ...this.state, audioFiles: [] });
     }
+    await this.getPlaylistFromServer().then(async () => {
+      //Eğer internet var, Playlisti güncelle
+      //Internety yoksa oynatmaya devam et.
+      if (this.state.noInternetConnection === false) {
+        console.log("----------- Playlist güncelleniiiyeaaa... -----------");
+        //Playlisti boşalat. Yeni bir şeyler getirmiş olmalı.
+        await TrackPlayer.reset();
 
-    //ve çal
-    await this.startToPlay(true);
+        await this.getAudioFiles();
+      }
+
+      //ve çal
+      await this.startToPlay(true);
+    });
   };
 
-  //Playlisti alır..
+  /**
+   * Serverdan playlisti çeker
+   * //State e atar. songs state i daha sonra
+   * getAudioFiles method'unda işleniyor
+   * ve audioFiles state'ini oluşruuyor
+   */
   getPlaylistFromServer = async () => {
     this.setState({ ...this.state, playListCrossChecking: true });
+    this.setState({ ...this.state, isPlaying: false });
     await axios
       .post("https://www.radiorder.online/Profil/MobilePlaylistYukle", {
         from: "mobileapp",
@@ -465,7 +521,6 @@ export class AudioProvider extends PureComponent {
         //Şarkıları indir.
         this.setState({ ...this.state, playListCrossChecking: false });
         this.setState({ ...this.state, noInternetConnection: false });
-
         if (playlist.length !== 0) {
           for (i = 0; i <= playlist.length; i++) {
             await this.DownloadSongsFromServer(
@@ -568,6 +623,8 @@ export class AudioProvider extends PureComponent {
 
   componentWillUnmount() {
     //this.state.DBConnection.close();
+    clearInterval(this.inervalCheck4Update);
+    BackgroundTimer.stopBackgroundTimer();
     this.setState = (state, callback) => {
       return;
     };
@@ -576,49 +633,52 @@ export class AudioProvider extends PureComponent {
   //Playerdaki değişimleri dinler..
   playerEventListener = async () => {
     TrackPlayer.addEventListener("playback-state", async (e) => {
-      console.log("--------------------EVENT--------------");
-      console.log(e);
+      console.log("---------------EVENT---------------", e);
+
+      if (e.state == "paused" && e.state == "connecting" && e.state == "idle") {
+        this.setState({ ...this.state, isPlaying: false });
+      }
+      if (e.state == "playing") {
+        this.setState({ ...this.state, isPlaying: true });
+      }
     });
 
     //Şarkı değiştiğinde - Bittinğin de
     TrackPlayer.addEventListener("playback-track-changed", async () => {
-      console.log("------------ . NEXT: Song .----------");
+      console.log("------------ . SONG CHANGED .----------");
+
+      //Bağlantıyı kontrol et.
       NetInfo.fetch().then(async (connection) => {
         if (connection.isConnected == true) {
           this.setState({ ...this.state, noInternetConnection: false });
         }
       });
+
+      const currentAudioIndex = await TrackPlayer.getCurrentTrack();
+      // console.log("currentAudioIndex", currentAudioIndex);
+      // console.log("this.state.audioFiles.length", this.state.audioFiles.length);
+
+      ///Son şarkı ise, bir bak bakalım silindecek mp3 dosyası var mı?
+      //if (currentAudioIndex + 1 == this.state.audioFiles.length) {
+      if (currentAudioIndex == 2) {
+        console.log("----------QUEUE ENDED : TIME TO CLEANING---------");
+        this.theSongCleaner();
+      }
+
       //Logout yapılınca yeniden çağrılıyor.
       const user_token = await AsyncStorage.getItem("userToken");
       if (user_token == null) {
         await TrackPlayer.pause();
         return false;
       }
-      //Index'i belirle
-      const songIndex = JSON.parse(
-        await AsyncStorage.getItem("lastAudioIndex")
-      );
-      const activePlaylistIndex = await TrackPlayer.getCurrentTrack();
+
       //flatlist index
       this.setState({
         ...this.state,
-        flatListScrollIndex: activePlaylistIndex,
-        currentAudioIndex: songIndex,
-        activeFlatListIndex: activePlaylistIndex,
-        isPlaying: true,
+        flatListScrollIndex: currentAudioIndex,
+        currentAudioIndex: currentAudioIndex,
+        activeFlatListIndex: currentAudioIndex,
       });
-
-      //Playlisti güncelle
-      //Tabi eğer cache süresi dolmuş ise.
-      await this.loginToServerAndPlay().then(() => {
-        //Temizlik yap.
-        if (songIndex == this.state.audioFiles.length - 1) {
-          console.log("-------------TIME TO CLEANING-----");
-          this.theSongCleaner();
-        }
-      });
-
-      AsyncStorage.setItem("lastAudioIndex", JSON.stringify(songIndex));
 
       // const status = await TrackPlayer.getState();
       // const playbackObj = await TrackPlayer.getTrack(songIndex);
@@ -626,29 +686,32 @@ export class AudioProvider extends PureComponent {
   };
 
   /**
-   * Çal
+   * getAudioFiles() methodunda içi dolurulan audioFiles statni alır
+   * ve TrackPlayer'a ekler. Son kaldığı yerden çalmaya başlar.
+   * @param timeToUpdate boolean servara veriler alındıktan sonra true olarak girili
    */
   startToPlay = async (timeToUpdate = false) => {
     //Dosya boş ise
 
     setTimeout(async () => {
       console.log("----------------- START TO PLAY -----------------");
-      if (this.state.isPlaying && timeToUpdate == false) {
-        return false;
-      }
+
       //Şarkıyı yükle ve çal
       //Playeri oluştur
       try {
-        await TrackPlayer.add(this.state.audioFiles);
+        await TrackPlayer.add(this.state.audioFiles).then(async () => {
+          //Eğer güncelleme yapıldıysa.
+          //Son kaldığı şarkı sırasına git ve çalmaya oradan başla.
+          if (timeToUpdate) {
+            let lastAudioIndex = JSON.parse(
+              await AsyncStorage.getItem("lastAudioIndex")
+            );
 
-        await TrackPlayer.setRepeatMode(RepeatMode.Queue);
-        let lastAudioIndex = JSON.parse(
-          await AsyncStorage.getItem("lastAudioIndex")
-        );
-        console.log("------------lastAudioIndex: ", lastAudioIndex);
-        if (lastAudioIndex == null) lastAudioIndex = 0;
+            if (lastAudioIndex == null) lastAudioIndex = 0;
+            this.state.currentAudioIndex = lastAudioIndex;
+            await TrackPlayer.skip(lastAudioIndex);
+          }
 
-        await TrackPlayer.skip(lastAudioIndex).then(async () => {
           await TrackPlayer.play().then(() => {
             this.setState({ ...this.state, isPlaying: true });
           });
@@ -701,35 +764,36 @@ export class AudioProvider extends PureComponent {
   //Playlistteki dosyalar ve mediadaki dosyalar kkarşılaştırıp
   //Eşleşmeyeni siler
   theSongCleaner = async () => {
-    const { DownloadDir } = RNFetchBlob.fs.dirs;
     console.log("------------------FILE DELETING--------------");
     //Silecnecek dosyaları bul be abi
+    const { DownloadDir } = RNFetchBlob.fs.dirs;
     let media = await this.getMediaFiles();
     media = media.assets;
     let audioFiles = this.state.audioFiles;
 
-    let fileWillDeleted = [];
+    //Silinecek dosyaları belirle
     for (let i = 0; i < audioFiles.length; i++) {
       media = media.filter((item) => {
         return item?.filename != audioFiles[i]?.filename;
       });
     }
 
+    //Sil şimdi.
     for (let d = 0; d < media?.length; d++) {
-      //TEmizle
-      const file = `${DownloadDir}/${media[d].filename}`;
+      let file = `${DownloadDir}/${media[d].filename}`;
+      const isExist = await RNFetchBlob.fs.exists(media[d].uri);
       console.log("DELETED FILE: ", file);
+      console.log("File exists:", isExist);
 
-      const results = await RNFetchBlob.fs
+      const result = await RNFetchBlob.fs
         .unlink(file)
-        .then(() => {
-          return { deleted: true };
+        .then((res) => {
+          console.log("------------DELETEEE----", res);
         })
         .catch((err) => {
-          return { deleted: false };
+          console.log(err);
         });
-
-      console.log(results);
+      console.log(result);
     }
   };
 
@@ -813,7 +877,6 @@ export class AudioProvider extends PureComponent {
           playListCrossChecking: this.state.playListCrossChecking,
           anonsCrossChecking: this.state.anonsCrossChecking,
           noInternetConnection: this.state.noInternetConnection,
-          manualUpdate: this.manualUpdate,
         }}
       >
         {this.state.noInternetConnection == false ? (
