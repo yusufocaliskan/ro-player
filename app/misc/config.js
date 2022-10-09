@@ -1,7 +1,7 @@
 const configs = {
   //Application versionu
   //Burada belirt.
-  VERSION: "8.4",
+  VERSION: "8.5",
 
   //Sertifika bilgileri
   SER_USERNAME: "radiorder",
@@ -31,7 +31,7 @@ const configs = {
 
   //Servera gitme saati
   //saniye cinsinden
-  TIME_OF_GETTING_SONGS_FROM_SERVER: 10, //1 saat
+  TIME_OF_GETTING_SONGS_FROM_SERVER: 60 * 10, //1 saat
 
   //Servera indirilmiş olan şarkıların yeniden
   ANONS_FILTERING_CACHE_TIME: 1, //

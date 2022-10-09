@@ -418,7 +418,6 @@ export class AudioProvider extends PureComponent {
         //Player kurulu ise yeniden kurma
         if (service == false) {
           await TrackPlayer.setupPlayer();
-          await TrackPlayer.setRepeatMode(RepeatMode.Queue);
         }
 
         //lastAudioIndex'i 0 eşitle
@@ -624,7 +623,7 @@ export class AudioProvider extends PureComponent {
               },
             };
             try {
-              console.log(this.downloadTask);
+              //console.log(this.downloadTask);
               await RNFetchBlob.config(this.downloadTask)
                 .fetch("GET", mp3_file)
                 .then((res) => {
@@ -663,6 +662,7 @@ export class AudioProvider extends PureComponent {
 
   //Playerdaki değişimleri dinler..
   playerEventListener = async () => {
+    //Çalıyor mu?
     TrackPlayer.addEventListener("playback-state", async (e) => {
       console.log("---------------EVENT---------------", e);
 
@@ -688,7 +688,8 @@ export class AudioProvider extends PureComponent {
       const currentAudioIndex = await TrackPlayer.getCurrentTrack();
       // console.log("currentAudioIndex", currentAudioIndex);
       // console.log("this.state.audioFiles.length", this.state.audioFiles.length);
-
+      const queue = await TrackPlayer.getQueue();
+      console.log("Quuuuuueeeeuuu:eee: ", queue.length);
       ///Son şarkı ise, bir bak bakalım silindecek mp3 dosyası var mı?
       if (currentAudioIndex + 1 == this.state.audioFiles.length) {
         //if (currentAudioIndex == 2) {
@@ -724,34 +725,32 @@ export class AudioProvider extends PureComponent {
   startToPlay = async (timeToUpdate = false) => {
     //Dosya boş ise
 
-    setTimeout(async () => {
-      console.log("----------------- START TO PLAY -----------------");
+    console.log("----------------- START TO PLAY -----------------");
 
-      //Şarkıyı yükle ve çal
-      //Playeri oluştur
-      try {
-        await TrackPlayer.add(this.state.audioFiles).then(async () => {
-          //Eğer güncelleme yapıldıysa.
-          //Son kaldığı şarkı sırasına git ve çalmaya oradan başla.
-          if (timeToUpdate) {
-            let lastAudioIndex = JSON.parse(
-              await AsyncStorage.getItem("lastAudioIndex")
-            );
+    //Şarkıyı yükle ve çal
+    //Playeri oluştur
+    try {
+      await TrackPlayer.add(this.state.audioFiles).then(async () => {
+        //Eğer güncelleme yapıldıysa.
+        //Son kaldığı şarkı sırasına git ve çalmaya oradan başla.
+        if (timeToUpdate) {
+          let lastAudioIndex = JSON.parse(
+            await AsyncStorage.getItem("lastAudioIndex")
+          );
 
-            if (lastAudioIndex == null) lastAudioIndex = 0;
+          if (lastAudioIndex == null) lastAudioIndex = 0;
 
-            this.state.currentAudioIndex = lastAudioIndex;
-            await TrackPlayer.skip(lastAudioIndex);
-          }
-
-          await TrackPlayer.play().then(() => {
-            this.setState({ ...this.state, isPlaying: true });
-          });
+          this.state.currentAudioIndex = lastAudioIndex;
+          await TrackPlayer.skip(lastAudioIndex);
+        }
+        await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+        await TrackPlayer.play().then(() => {
+          this.setState({ ...this.state, isPlaying: true });
         });
-      } catch (error) {
-        console.log(error);
-      }
-    }, 1000);
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   //Tüm müzik dosyalarını Temile
