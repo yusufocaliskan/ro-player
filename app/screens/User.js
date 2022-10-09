@@ -1,5 +1,12 @@
 import React, { useEffect, useContext } from "react";
-import { Alert, View, StyleSheet, Text, Image } from "react-native";
+import {
+  BackHandler,
+  Alert,
+  View,
+  StyleSheet,
+  Text,
+  Image,
+} from "react-native";
 import Screen from "../components/Screen";
 import { AudioContext } from "../context/AudioProvider";
 import Button from "../components/form/Button";
@@ -10,6 +17,8 @@ import { LangContext } from "../context/LangProvider";
 import configs from "../misc/config";
 import TrackPlayer from "react-native-track-player";
 import BackgroundTimer from "react-native-background-timer";
+
+import axios from "axios";
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
   const audioContext = useContext(AudioContext);
@@ -23,9 +32,31 @@ const User = () => {
       await TrackPlayer.removeUpcomingTracks();
       await TrackPlayer.pause();
     }
+
+    //Cronjob'u sonladır
     BackgroundTimer.clearInterval(audioContext.inervalCheck4Update);
-    singOut();
+
+    //Serverdan oturumu kapat.
+    const userId = loadingState.userData.FSL.KullaniciListesi.KullaniciDto.Id;
+    await axios
+      .post("https://www.radiorder.online/Radiorder/Cikis", {
+        RadiKullanici: userId,
+      })
+      .then(() => {
+        //Application'nda oturumu kapat
+        singOut();
+
+        //Download işlemi varsa ve logout edliyorsa
+        //Download işlemin iptali için kapat applicationı
+        if (audioContext.isDownloading == true) {
+          BackHandler.exitApp();
+        }
+      });
   };
+
+  /**
+   * Çıkış yapmadan önce sor.
+   */
   const singOutUser = async () => {
     Alert.alert(Lang?.LOGOUT, Lang?.ARE_YOU_SURE, [
       {
@@ -115,6 +146,7 @@ const User = () => {
           <Button
             style={styles.logOutButton}
             onPress={singOutUser}
+            logging={audioContext.isDownloading}
             text={Lang?.LOGOUT}
             textStyle={styles.buttonTextStyle}
           />

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Text, View, Alert, StyleSheet, ActivityIndicator } from "react-native";
 import color from "../misc/color";
 import config from "../misc/config";
@@ -14,7 +14,6 @@ import LanguageModal from "../components/LanguageModal";
 //Navigator.
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-
 const Login = () => {
   // Context
 

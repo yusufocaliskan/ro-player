@@ -1,5 +1,5 @@
 import React, { PureComponent, createContext } from "react";
-import { Text, Modal, StyleSheet, View, Alert } from "react-native";
+import { Text, Modal, StyleSheet, View, Alert, AppState } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
@@ -135,6 +135,8 @@ export class AudioProvider extends PureComponent {
     this.totalAnonsCount = 0;
 
     this.inervalCheck4Update = null;
+    this.appState;
+    this.downloadTask;
   }
 
   //Hata mesajı göster.
@@ -379,6 +381,20 @@ export class AudioProvider extends PureComponent {
   componentDidMount = () => {
     //Version numarasını söyle.
     //Tts.speak(`Versiyon ${config.VERSION}`);
+    this.appState = AppState.addEventListener("change", (nextState) => {
+      console.log(nextState);
+      if (
+        nextState == "background" ||
+        nextState == "inactive" ||
+        nextState == "unknown"
+      ) {
+        BackgroundTimer.clearInterval(this.inervalCheck4Update);
+        //this.downloadTask.cancel();
+      }
+      if (nextState == "active") {
+        this.startTheCronJob();
+      }
+    });
 
     //DB Bağlantı, dosya izni ve verileri databaseden all.
     this.getUserInfo();
@@ -429,10 +445,17 @@ export class AudioProvider extends PureComponent {
     }
   };
 
+  /**
+   * Belli aralıklarla playlisti günceller.
+   */
   startTheCronJob = () => {
     this.inervalCheck4Update = BackgroundTimer.setInterval(() => {
       console.log("-----HII--CRON---JOB---");
-      this.check4Update();
+
+      //Download işlemi yoksa çalıştır.
+      if (this.state.isDownloading == false) {
+        this.check4Update();
+      }
     }, convertSecondToMillisecond(config.TIME_OF_GETTING_SONGS_FROM_SERVER + 5));
   };
   /**
@@ -455,9 +478,8 @@ export class AudioProvider extends PureComponent {
 
     //Playlisti güncelle
     //Tabi eğer cache süresi dolmuş ise.
-    if (this.state.isDownloading == false) {
-      await this.loginToServerAndPlay();
-    }
+
+    await this.loginToServerAndPlay();
   };
 
   /**
@@ -515,6 +537,8 @@ export class AudioProvider extends PureComponent {
   getPlaylistFromServer = async () => {
     this.setState({ ...this.state, playListCrossChecking: true });
     this.setState({ ...this.state, isPlaying: false });
+    //this.setState({ ...this.state, showLoginModal: true });
+
     await axios
       .post("https://www.radiorder.online/Profil/MobilePlaylistYukle", {
         from: "mobileapp",
@@ -540,6 +564,7 @@ export class AudioProvider extends PureComponent {
                 this.setState({ ...this.state, isDownloading: false });
                 this.setState({ ...this.state, currentDownloadedSong: "" });
                 this.setState({ ...this.state, totalSong: 0 });
+                this.setState({ ...this.state, countDownloadedSong: 0 });
               }
             });
           }
@@ -584,38 +609,38 @@ export class AudioProvider extends PureComponent {
       //Dosyayı daha önce indirmişsek, bir şey yapma..
       try {
         const isExist = await RNFetchBlob.fs.exists(soundName);
+        const mp3_file = `https://file.radiorder.online/${sounds?.mp3}`;
 
-        if (isExist) return;
-        console.log("Is exists: ", isExist);
-        //Şarkıyı indir..
-        if (sounds) {
-          const options = {
-            fileCache: true,
-            addAndroidDownloads: {
-              useDownloadManager: true,
-              notification: false,
-              path: soundName,
-              description: "Downloading.",
-            },
-          };
-          try {
-            const mp3_file = `https://radiorder.online/${sounds?.mp3}`;
+        if (!isExist) {
+          //Şarkıyı indir..
+          if (sounds) {
+            this.downloadTask = {
+              fileCache: true,
+              addAndroidDownloads: {
+                useDownloadManager: true,
+                notification: false,
+                path: soundName,
+                description: "Downloading.",
+              },
+            };
+            try {
+              console.log(this.downloadTask);
+              await RNFetchBlob.config(this.downloadTask)
+                .fetch("GET", mp3_file)
+                .then((res) => {
+                  return "res";
+                });
 
-            await RNFetchBlob.config(options)
-              .fetch("GET", mp3_file)
-              .then((res) => {
-                return "res";
+              this.setState({ ...this.state, isDownloading: true });
+              this.setState({ ...this.state, totalSong: totalSong });
+              this.setState({
+                ...this,
+                currentDownloadedSong: sounds.title,
+                countDownloadedSong: this.state.countDownloadedSong + 1,
               });
-
-            this.setState({ ...this.state, isDownloading: true });
-            this.setState({ ...this.state, totalSong: totalSong });
-            this.setState({
-              ...this,
-              currentDownloadedSong: sounds.title,
-              countDownloadedSong: this.state.countDownloadedSong + 1,
-            });
-          } catch (error) {
-            console.log(error);
+            } catch (error) {
+              console.log(error);
+            }
           }
         }
       } catch (error) {
@@ -630,6 +655,7 @@ export class AudioProvider extends PureComponent {
     //this.state.DBConnection.close();
     clearInterval(this.inervalCheck4Update);
     BackgroundTimer.clearInterval(this.inervalCheck4Update);
+    this.appState.remove();
     this.setState = (state, callback) => {
       return;
     };
@@ -664,8 +690,8 @@ export class AudioProvider extends PureComponent {
       // console.log("this.state.audioFiles.length", this.state.audioFiles.length);
 
       ///Son şarkı ise, bir bak bakalım silindecek mp3 dosyası var mı?
-      //if (currentAudioIndex + 1 == this.state.audioFiles.length) {
-      if (currentAudioIndex == 2) {
+      if (currentAudioIndex + 1 == this.state.audioFiles.length) {
+        //if (currentAudioIndex == 2) {
         console.log("----------QUEUE ENDED : TIME TO CLEANING---------");
         this.theSongCleaner();
       }
@@ -774,9 +800,13 @@ export class AudioProvider extends PureComponent {
     //Silecnecek dosyaları bul be abi
     const { DownloadDir } = RNFetchBlob.fs.dirs;
     let media = await this.getMediaFiles();
+
     media = media.assets;
     let audioFiles = this.state.audioFiles;
-
+    let queue = await TrackPlayer.getQueue();
+    // console.log("audioFiles.length", audioFiles.length);
+    // console.log("queue.length", queue.length);
+    // console.log("media.length", media.length);
     if (audioFiles.length == 0) return;
 
     //Silinecek dosyaları belirle
@@ -887,6 +917,7 @@ export class AudioProvider extends PureComponent {
           anonsCrossChecking: this.state.anonsCrossChecking,
           noInternetConnection: this.state.noInternetConnection,
           inervalCheck4Update: this.inervalCheck4Update,
+          downloadTask: this.downloadTask,
         }}
       >
         {this.state.noInternetConnection == false ? (
