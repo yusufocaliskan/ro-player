@@ -9,6 +9,7 @@ import LanguageModal from "../components/LanguageModal";
 import { LangContext } from "../context/LangProvider";
 import configs from "../misc/config";
 import TrackPlayer from "react-native-track-player";
+import BackgroundTimer from "react-native-background-timer";
 const User = () => {
   const { singOut, loadingState } = useContext(newAuthContext);
   const audioContext = useContext(AudioContext);
@@ -22,7 +23,7 @@ const User = () => {
       await TrackPlayer.removeUpcomingTracks();
       await TrackPlayer.pause();
     }
-
+    BackgroundTimer.clearInterval(audioContext.inervalCheck4Update);
     singOut();
   };
   const singOutUser = async () => {
