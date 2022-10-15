@@ -100,7 +100,7 @@ export class AudioList extends Component {
     this.eventListener();
   };
 
-  eventListener = () => {
+  eventListener = async () => {
     TrackPlayer.addEventListener("playback-track-changed", async () => {
       await TrackPlayer.getCurrentTrack().then((index) => {
         this.flatListScrollToIndex(index);
@@ -126,6 +126,18 @@ export class AudioList extends Component {
             style={{ paddingTop: 20 }}
             data={this.context.audioFiles}
             keyExtractor={(item, index) => String(index)}
+            saveScrollPosition={true}
+            initialScrollIndex={0}
+            onScrollToIndexFailed={async () => {
+              const lastIndex = JSON.parse(
+                await AsyncStorage.getItem("lastAudioIndex")
+              );
+
+              this.flatListRef?.scrollToIndex({
+                animated: false,
+                index: lastIndex,
+              });
+            }}
             //initialNumToRender={2}
             //scrollEnabled={this.context.playListCrossChecking ? false : true}
             ref={(ref) => {

@@ -1,3 +1,6 @@
+//@author Yusuf Çalışkan
+//@date 10/10/22
+
 import React, { useMemo, useEffect, useReducer, useState } from "react";
 import { LogBox } from "react-native";
 
@@ -16,6 +19,9 @@ import NavigationStack from "./app/navigation/NavigationStack";
 
 //CodePush
 import codePush from "react-native-code-push";
+
+//Application açıldığında
+//Güncelleme kontrolü yap
 const codePushOptions = {
   checkFrequency: codePush.CheckFrequency.ON_APP_START,
 };
@@ -28,34 +34,11 @@ const App = () => {
   //Application başlatılıdğında Bir update var mı yok mu diye bak.
   //Bu update application için
   //Varsa hemen indir..IMMEDIATE IMMEDIATE IMMEDIATE :)
-  //start: -------------------------------------------
-  // const [installingUpdates, setInstallingUpdates] = useState(true);
-  codePush.sync(
-    {
-      updateDialog: false,
-      installMode: codePush.InstallMode.IMMEDIATE,
-    }
-    //  (status) => {
-    //   switch (status) {
-    //     case codePush.SyncStatus.DOWNLOADING_PACKAGE:
-    //       console.log("------ -------DONWLOADINNN GGG----");
-    //       Tts.speak("Downloads new version");
-    //       break;
-    //     case codePush.SyncStatus.INSTALLING_UPDATE:
-    //       console.log("-------------Installing----");
-    //       Tts.speak("Intalling new updates");
-    //       break;
-    //     case codePush.SyncStatus.UPDATE_INSTALLED:
-    //       console.log("-------------INSTALLLEEDD----");
-    //       Tts.speak("Updates installed");
-    //       break;
-    //     case codePush.SyncStatus.UP_TO_DATE:
-    //       console.log("------ -------The Application is up_to_date----");
-    //       Tts.speak(`The Application version is ${configs.VERSION}`);
-    //       break;
-    //   }
-    // }
-  );
+  codePush.sync({
+    updateDialog: false,
+    installMode: codePush.InstallMode.IMMEDIATE,
+  });
+
   //end: -------------------------------------------
 
   //default değerler

@@ -4,10 +4,8 @@ import * as MediaLibrary from "expo-media-library";
 import NetInfo from "@react-native-community/netinfo";
 import WebView from "react-native-webview";
 import TrackPlayer, { RepeatMode } from "react-native-track-player";
-import BackgroundTimer from "react-native-background-timer";
 
 import {
-  getCurrentDate,
   getDifferenceBetweenTwoHours,
   convertSecondToMillisecond,
   clearFileName,
@@ -25,6 +23,7 @@ import { newAuthContext } from "../context/newAuthContext";
 //Test Anonslar
 //import TestAnons from "../TestAnons";
 import color from "../misc/color";
+import BackgroundTimer from "react-native-background-timer";
 
 export const AudioContext = createContext();
 
@@ -41,8 +40,6 @@ export class AudioProvider extends PureComponent {
 
       //Login Pop-up
       showLoginModal: false,
-      loggingIsDone: false,
-
       debug: null,
 
       //Mediadan alınan şarkılar
@@ -54,9 +51,6 @@ export class AudioProvider extends PureComponent {
       permissionError: false,
       permission: null,
 
-      //Şarkı listesi
-      dataProvider: null,
-
       //Şarkı çalma conrtolleri.
       playbackObj: null,
       soundObj: null,
@@ -64,7 +58,6 @@ export class AudioProvider extends PureComponent {
       currentAudio: {},
       isPlaying: false,
       currentAudioIndex: 0,
-      howManySongPlayed: 0,
 
       //Slider için
       playbackPosition: null,
@@ -85,7 +78,6 @@ export class AudioProvider extends PureComponent {
       waitLittleBitStillDownloading: false,
 
       //Şarkı listesi
-      dataProvider: null,
 
       //songs
       songs: [],
@@ -162,10 +154,12 @@ export class AudioProvider extends PureComponent {
       //izin verildi tüm şarkıları aall
       //this.savePermission("granted");
     }
+
     if (!permission.granted && !permission.canAskAgain) {
       this.setState({ ...this.state.state, permissionError: true });
       return;
     }
+
     //İzin verilmedi ama yeniden sorulabilir.
     //O zaman soralım!
     if (!permission.granted && permission.canAskAgain) {
@@ -378,19 +372,23 @@ export class AudioProvider extends PureComponent {
   /**
    * Çalıştığında
    */
-  componentDidMount = () => {
-    //Version numarasını söyle.
-    //Tts.speak(`Versiyon ${config.VERSION}`);
+  componentDidMount = (prevState, newState) => {
+    //Applicationı durrmunu belirle.
+    //background | active?
     this.appState = AppState.addEventListener("change", (nextState) => {
       console.log(nextState);
+
+      //Pasive ise cronjob'u durdur.
       if (
         nextState == "background" ||
         nextState == "inactive" ||
         nextState == "unknown"
       ) {
-        BackgroundTimer.clearInterval(this.inervalCheck4Update);
-        //this.downloadTask.cancel();
+        this.clearCheck4UpdateInterval();
+        //clearInterval(this.inervalCheck4Update);
       }
+
+      //Active is cronjob'u başlat
       if (nextState == "active") {
         this.startTheCronJob();
       }
@@ -410,18 +408,19 @@ export class AudioProvider extends PureComponent {
       //this.requestToPermissions();
       //Musiclere erişim izni all
       await this.getPermission().then(async () => {
-        //Admin ayarları
-        //Serverdan Şarkı listesini al
-        //await this.getSoundsAndAnonsFromServer();
-        const service = await TrackPlayer.isServiceRunning();
-
         //Player kurulu ise yeniden kurma
+
+        const service = await TrackPlayer.isServiceRunning();
         if (service == false) {
           await TrackPlayer.setupPlayer();
         }
 
         //lastAudioIndex'i 0 eşitle
         AsyncStorage.setItem("lastAudioIndex", JSON.stringify(0));
+
+        //Application ilk kez açıldığında
+        //Güncelleme saatini sıfırla.
+        AsyncStorage.removeItem("Last_Playlist_Update_Time");
 
         //Son updatei state'e ata
         const lastTime = await AsyncStorage.getItem(
@@ -432,7 +431,7 @@ export class AudioProvider extends PureComponent {
 
         //Güncelleme için yeni interval aç
         //Her TIME_OF_GETTING_SONGS_FROM_SERVER süre sorran playlisti güncelle
-        this.startTheCronJob();
+        // this.startTheCronJob();
 
         //Eventleri dinle
         await this.playerEventListener();
@@ -448,15 +447,19 @@ export class AudioProvider extends PureComponent {
    * Belli aralıklarla playlisti günceller.
    */
   startTheCronJob = () => {
-    this.inervalCheck4Update = BackgroundTimer.setInterval(() => {
-      console.log("-----HII--CRON---JOB---");
-
-      //Download işlemi yoksa çalıştır.
-      if (this.state.isDownloading == false) {
-        this.check4Update();
-      }
-    }, convertSecondToMillisecond(config.TIME_OF_GETTING_SONGS_FROM_SERVER + 5));
+    if (this.inervalCheck4Update == null || this.inervalCheck4Update <= 0) {
+      console.log("---------CRONJOB CREATED------------");
+      this.inervalCheck4Update = BackgroundTimer.setInterval(() => {
+        console.log("------------CRONJOB WORKING-------------");
+        //Eğer indirme işlemi varsa yeniden sorgulama yapma!
+        if (this.state.isDownloading == false) {
+          console.log("---------------CHECKING4UPDATESS--------------");
+          this.check4Update();
+        }
+      }, convertSecondToMillisecond(config.TIME_OF_GETTING_SONGS_FROM_SERVER + 5));
+    }
   };
+
   /**
    * Interval için kullanıylıyor...
    * //Yeni güncelleme var mı yok mıu?
@@ -465,6 +468,7 @@ export class AudioProvider extends PureComponent {
   check4Update = async () => {
     const cacheTimeout = await this.cacheControl();
     //Çalıyorsa durdur.
+
     if (this.state.isPlaying == true && cacheTimeout == true) {
       await TrackPlayer.pause();
     }
@@ -553,7 +557,7 @@ export class AudioProvider extends PureComponent {
 
         if (playlist.length !== 0) {
           for (i = 0; i <= playlist.length; i++) {
-            await this.DownloadSongsFromServer(
+            await this.downloadSongsFromServer(
               playlist[i],
               "sound",
               i,
@@ -586,7 +590,7 @@ export class AudioProvider extends PureComponent {
    * Server'dan şarkıları çeker
    * @param {object} sounds indirilicek şarkı
    */
-  DownloadSongsFromServer = async (
+  downloadSongsFromServer = async (
     sounds,
     downloadType = "sound",
     i,
@@ -609,7 +613,9 @@ export class AudioProvider extends PureComponent {
       try {
         const isExist = await RNFetchBlob.fs.exists(soundName);
         const mp3_file = `https://file.radiorder.online/${sounds?.mp3}`;
+        //console.log(i, isExist, soundName);
 
+        //Daha önce indirilmemiş. Download et.
         if (!isExist) {
           //Şarkıyı indir..
           if (sounds) {
@@ -650,11 +656,39 @@ export class AudioProvider extends PureComponent {
     }
   };
 
-  componentWillUnmount() {
-    //this.state.DBConnection.close();
-    clearInterval(this.inervalCheck4Update);
+  componentDidUpdate = (prevProps, prevState) => {
+    //console.log("prev >> ", prevState, new Date().toLocaleString());
+
+    //Cronbjob
+    if (prevState.isDownloading == false) {
+      this.startTheCronJob();
+    } else if (prevState.isDownloading == true) {
+      this.clearCheck4UpdateInterval();
+    }
+  };
+
+  /**
+   * Oluşturulan interval'i siler
+   */
+  clearCheck4UpdateInterval = () => {
+    console.log("---------CRONJOB CLEARED------------");
     BackgroundTimer.clearInterval(this.inervalCheck4Update);
+    delete this.inervalCheck4Update;
+    this.inervalCheck4Update = 0;
+    console.log("After cleared: ", this.inervalCheck4Update);
+  };
+
+  /**
+   * Componenet bittğinde
+   */
+  componentWillUnmount() {
+    //Intervalları sil
+    //clearInterval(this.inervalCheck4Update);
+    this.clearCheck4UpdateInterval();
+
+    //appState'i dinlemeyi bırak
     this.appState.remove();
+
     this.setState = (state, callback) => {
       return;
     };
@@ -669,6 +703,7 @@ export class AudioProvider extends PureComponent {
       if (e.state == "paused" && e.state == "connecting" && e.state == "idle") {
         this.setState({ ...this.state, isPlaying: false });
       }
+
       if (e.state == "playing") {
         this.setState({ ...this.state, isPlaying: true });
       }
@@ -685,11 +720,12 @@ export class AudioProvider extends PureComponent {
         }
       });
 
+      //Cronjob'u başlat
+      //Eğer dha önce yoksa.
+      this.startTheCronJob();
+
       const currentAudioIndex = await TrackPlayer.getCurrentTrack();
-      // console.log("currentAudioIndex", currentAudioIndex);
-      // console.log("this.state.audioFiles.length", this.state.audioFiles.length);
-      const queue = await TrackPlayer.getQueue();
-      console.log("Quuuuuueeeeuuu:eee: ", queue.length);
+
       ///Son şarkı ise, bir bak bakalım silindecek mp3 dosyası var mı?
       if (currentAudioIndex + 1 == this.state.audioFiles.length) {
         //if (currentAudioIndex == 2) {
@@ -802,7 +838,7 @@ export class AudioProvider extends PureComponent {
 
     media = media.assets;
     let audioFiles = this.state.audioFiles;
-    let queue = await TrackPlayer.getQueue();
+
     // console.log("audioFiles.length", audioFiles.length);
     // console.log("queue.length", queue.length);
     // console.log("media.length", media.length);
@@ -814,24 +850,28 @@ export class AudioProvider extends PureComponent {
         return item?.filename != audioFiles[i]?.filename;
       });
     }
-    console.log("Media: ", media.length);
+    //console.log("Media: ", media.length);
 
     //Sil şimdi.
     for (let d = 0; d < media?.length; d++) {
       let file = `${DownloadDir}/${media[d].filename}`;
       const isExist = await RNFetchBlob.fs.exists(media[d].uri);
-      console.log("DELETED FILE: ", file);
-      console.log("File exists:", isExist);
+      if (!isExist) continue;
+      console.log("File exists:", isExist, "File: ", file);
 
-      const result = await RNFetchBlob.fs
-        .unlink(file)
-        .then((res) => {
-          console.log("------------DELETEEE----", res);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-      console.log(result);
+      try {
+        const result = await RNFetchBlob.fs
+          .unlink(file)
+          .then((res) => {
+            console.log("------------DELETEEE----", res);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+        console.log(result);
+      } catch (error) {
+        console.log("----file deleting error:", error);
+      }
     }
   };
 
@@ -846,7 +886,6 @@ export class AudioProvider extends PureComponent {
       anonsFiles,
       mediaFiles,
       permissionError,
-      dataProvider,
       playbackObj,
       soundObj,
       currentAudio,
@@ -888,7 +927,6 @@ export class AudioProvider extends PureComponent {
           currentAudioIndex,
           playbackPosition,
           playbackDuration,
-          dataProvider: dataProvider,
           userData,
           getAnonsFiles: this.getAnonsFiles,
           getAudioFiles: this.getAudioFiles,

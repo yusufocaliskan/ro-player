@@ -52,4 +52,7 @@ export default {
   LOGIN_ERROR: "Failed to login. The information may be incorrect.",
   MANUAL_UPDATE: "Manual Update",
   VERSION_NUMBER: `The version is  `,
+  MINUTE: "min.",
+  EVERY: "every",
+  UPDATE: "Update",
 };

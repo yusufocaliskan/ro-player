@@ -49,4 +49,7 @@ export default {
   LOGIN_ERROR: "Giriş yapılamadı. Bilgiler yanlış olabilir.",
   MANUAL_UPDATE: "Elle Güncelle",
   VERSION_NUMBER: `Version numarası  `,
+  MINUTE: "dk.",
+  EVERY: "her",
+  UPDATE: "Güncelleme",
 };

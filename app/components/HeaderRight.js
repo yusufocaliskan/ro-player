@@ -38,7 +38,7 @@ const HeaderRight = () => {
           <View style={styles.updateView}>
             <MaterialIcons name="update" size={18} color={color.BLACK} />
             <Text style={styles.updateText}>
-              Update: {lastPlaylistUpdateTime.split(" ")[0]}
+              {Lang?.UPDATE}: {lastPlaylistUpdateTime.split(" ")[0]}
             </Text>
           </View>
           <View style={[styles.updateView, styles.versionIcon]}>
@@ -48,7 +48,8 @@ const HeaderRight = () => {
           <View style={[styles.updateView, styles.versionIcon]}>
             <Entypo name="time-slot" size={16} color="black" />
             <Text style={styles.updateText}>
-              her {configs.TIME_OF_GETTING_SONGS_FROM_SERVER / 60} dk.
+              {Lang?.EVERY} {configs.TIME_OF_GETTING_SONGS_FROM_SERVER / 60}{" "}
+              {Lang?.MINUTE}
             </Text>
           </View>
 

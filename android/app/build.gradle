@@ -145,6 +145,9 @@ android {
 
     defaultConfig {
         
+        
+        multiDexEnabled true
+    
         applicationId 'com.yusufocaliskan.roplayer'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -296,6 +299,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'com.android.support:multidex:1.0.3'
+
 
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules

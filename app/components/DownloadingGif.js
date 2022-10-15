@@ -7,7 +7,7 @@ const DownloadingGif = ({ songName, countDownloadedSong, totalSong }) => {
   return (
     <View style={styles.wrapper}>
       <View style={styles.row}>
-        <ActivityIndicator style={styles.spinner} color={color.RED} />
+        <ActivityIndicator style={styles.spinner} color={color.WHITE} />
         <Text style={styles.text}>{Lang?.DOWNLOADS_CONTINUE}</Text>
         <Text style={styles.text}>
           {countDownloadedSong}/{totalSong}
