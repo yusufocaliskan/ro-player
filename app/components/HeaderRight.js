@@ -38,7 +38,8 @@ const HeaderRight = () => {
           <View style={styles.updateView}>
             <MaterialIcons name="update" size={18} color={color.BLACK} />
             <Text style={styles.updateText}>
-              {Lang?.UPDATE}: {lastPlaylistUpdateTime.split(" ")[0]}
+              {/* {Lang?.UPDATE}:  */}
+              {lastPlaylistUpdateTime.split(" ")[0]}
             </Text>
           </View>
           <View style={[styles.updateView, styles.versionIcon]}>

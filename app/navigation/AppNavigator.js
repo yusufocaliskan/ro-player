@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import { StyleSheet } from "react-native";
 import AudioList from "../screens/AudioList";
-//import Player from "../screens/Player";
+import Player from "../screens/Player";
 import User from "../screens/User";
 import color from "../misc/color";
 import Anons from "../screens/Anons";
@@ -47,7 +47,7 @@ const AppNavigator = () => {
           },
         }}
       />
-      {/*      <Tab.Screen
+      <Tab.Screen
         name={Lang?.PLAYER || "Müzik Player"}
         component={Player}
         context={context}
@@ -59,7 +59,7 @@ const AppNavigator = () => {
           },
         }}
       />
-
+      {/*
       <Tab.Screen
         name={Lang?.ANONS || "Anons"}
         component={Anons}

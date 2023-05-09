@@ -12,9 +12,9 @@ import {
 } from "../misc/Helper";
 import RNFetchBlob from "rn-fetch-blob";
 import DownloadingGif from "../components/DownloadingGif";
+
 //Şarkıları listelemek için kullanırlır
 //ScrollView'den daha performanlısdır.
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import config from "../misc/config";
@@ -58,6 +58,7 @@ export class AudioProvider extends PureComponent {
       currentAudio: {},
       isPlaying: false,
       currentAudioIndex: 0,
+      currentTrack: null,
 
       //Slider için
       playbackPosition: null,
@@ -725,6 +726,8 @@ export class AudioProvider extends PureComponent {
       this.startTheCronJob();
 
       const currentAudioIndex = await TrackPlayer.getCurrentTrack();
+      const track = await TrackPlayer.getQueue();
+      this.setState({ ...this.state, currentTrack: track[currentAudioIndex] });
 
       ///Son şarkı ise, bir bak bakalım silindecek mp3 dosyası var mı?
       if (currentAudioIndex + 1 == this.state.audioFiles.length) {
@@ -955,6 +958,7 @@ export class AudioProvider extends PureComponent {
           noInternetConnection: this.state.noInternetConnection,
           inervalCheck4Update: this.inervalCheck4Update,
           downloadTask: this.downloadTask,
+          currentTrack: this.state.currentTrack,
         }}
       >
         {this.state.noInternetConnection == false ? (

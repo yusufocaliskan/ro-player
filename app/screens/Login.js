@@ -1,5 +1,12 @@
 import React, { useState, useContext, useEffect } from "react";
-import { Text, View, Alert, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  Text,
+  View,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
 import color from "../misc/color";
 import config from "../misc/config";
 import Logo from "../components/Logo";
@@ -11,6 +18,7 @@ import { newAuthContext } from "../context/newAuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LangContext } from "../context/LangProvider";
 import LanguageModal from "../components/LanguageModal";
+
 //Navigator.
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";

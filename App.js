@@ -158,7 +158,6 @@ const App = () => {
 
   useEffect(() => {
     //Kullanıcıdan ses dosyalarına erişim izni iste
-
     setTimeout(async () => {
       let userToken = null;
       let userData = null;

@@ -86,11 +86,7 @@ const Player = () => {
         </View>
         <View style={styles.audioPlayerContainer}>
           <Text numberOfLines={1} style={styles.audioName}>
-            {
-              context?.audioFiles[context?.currentAudioIndex]?.title?.split(
-                "_"
-              )[1]
-            }
+            {context?.currentTrack?.Ismi}
           </Text>
           {/* <Slider
             style={{ width: width, height: 20, padding: 20 }}
@@ -114,6 +110,7 @@ const Player = () => {
               color={color.WHITE}
               onPress={handlePlayPause}
             />
+
             <PlayerButton
               style={{ fontSize: 30 }}
               iconType="NEXT"
@@ -149,6 +146,7 @@ const styles = StyleSheet.create({
     color: color.WHITE,
     paddingBottom: 0,
     fontSize: 16,
+    marginLeft: 20,
   },
   sliderThumb: {
     color: "red",
